@@ -87,12 +87,12 @@ api.interceptors.response.use(
 // ==========================================
 
 export const loginUser = async (credentials) => {
-  const response = await api.post('/api/auth/login', credentials);
+  const response = await api.post('/api/auth/login/', credentials);
   return response.data;
 };
 
 export const fetchUserProfile = async () => {
-  const response = await api.get('/api/auth/me');
+  const response = await api.get('/api/auth/me/');
   return response.data;
 };
 
@@ -105,7 +105,7 @@ export const fetchUserProfile = async () => {
  * Réservé Admin & Comptable
  */
 export const fetchPaymentStats = async () => {
-  const response = await api.get('/api/payments/stats');
+  const response = await api.get('/api/payments/stats/');
   return response.data;
 };
 
@@ -113,7 +113,7 @@ export const fetchPaymentStats = async () => {
  * Récupère la liste de tous les paiements (Réservé Admin & Comptable)
  */
 export const fetchAllPayments = async () => {
-  const response = await api.get('/api/payments');
+  const response = await api.get('/api/payments/');
   let data = response.data;
   
   console.log('[API] fetchAllPayments - response.data brut:', data);
@@ -133,7 +133,7 @@ export const fetchAllPayments = async () => {
  * Soumettre un nouveau versement (Statut PENDING par défaut)
  */
 export const createPayment = async (paymentData) => {
-  const response = await api.post('/api/payments', paymentData);
+  const response = await api.post('/api/payments/', paymentData);
   return response.data;
 };
 
@@ -141,7 +141,7 @@ export const createPayment = async (paymentData) => {
  * Validation d'un paiement par le Comptable (Passe le statut à APPROVED)
  */
 export const validatePayment = async (paymentId) => {
-  const response = await api.patch(`/api/payments/${paymentId}/validate`);
+  const response = await api.patch(`/api/payments/${paymentId}/validate/`);
   return response.data;
 };
 
@@ -154,7 +154,7 @@ export const rejectPayment = async (paymentId, reason) => {
 
   try {
     // 1. Première tentative : Transmission en body JSON avec les clés Pydantic usuelles
-    const response = await api.patch(`/api/payments/${paymentId}/reject`, {
+    const response = await api.patch(`/api/payments/${paymentId}/reject/`, {
       reason: cleanReason,
       rejection_reason: cleanReason,
     });
@@ -164,7 +164,7 @@ export const rejectPayment = async (paymentId, reason) => {
     if (error?.response?.status === 400 || error?.response?.status === 422) {
       console.warn('[API] Rejet en JSON échoué (400/422), tentative en Query Parameter...');
       const fallbackResponse = await api.patch(
-        `/api/payments/${paymentId}/reject`,
+        `/api/payments/${paymentId}/reject/`,
         null,
         { params: { reason: cleanReason, rejection_reason: cleanReason } }
       );
@@ -178,7 +178,7 @@ export const rejectPayment = async (paymentId, reason) => {
  * Récupère l'état du compte financier d'un élève
  */
 export const fetchStudentAccount = async (studentId) => {
-  const response = await api.get(`/api/payments/account/${studentId}`);
+  const response = await api.get(`/api/payments/account/${studentId}/`);
   return response.data;
 };
 
@@ -186,7 +186,7 @@ export const fetchStudentAccount = async (studentId) => {
  * Récupère l'historique des paiements d'un élève
  */
 export const fetchStudentPaymentHistory = async (studentId) => {
-  const response = await api.get(`/api/payments/history/${studentId}`);
+  const response = await api.get(`/api/payments/history/${studentId}/`);
   return response.data;
 };
 
@@ -195,17 +195,17 @@ export const fetchStudentPaymentHistory = async (studentId) => {
 // ==========================================
 
 export const createParent = async (parentData) => {
-  const response = await api.post('/api/admin/parents', parentData);
+  const response = await api.post('/api/admin/parents/', parentData);
   return response.data;
 };
 
 export const createClass = async (classData) => {
-  const response = await api.post('/api/admin/classes', classData);
+  const response = await api.post('/api/admin/classes/', classData);
   return response.data;
 };
 
 export const createStudent = async (studentData) => {
-  const response = await api.post('/api/admin/students', studentData);
+  const response = await api.post('/api/admin/students/', studentData);
   return response.data;
 };
 

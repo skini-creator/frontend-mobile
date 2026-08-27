@@ -1,8 +1,12 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 
-// Instance de base Axios avec gestion stricte du cache
+// URL déployée de l'API FastAPI sur Vercel
+const deployedBaseUrl = 'https://portail-scolaire.vercel.app';
+
+// Instance Axios configurée directement sur Vercel
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: deployedBaseUrl,
   headers: {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -32,10 +36,9 @@ export const setAuthToken = (token) => {
  */
 export const getAuthToken = () => authToken;
 
-// Intercepteur de requête pour garantir la réinjection du token et contourner le cache HTTP
+// Intercepteur de requête pour réinjecter le token et désactiver le cache HTTP
 api.interceptors.request.use(
   (config) => {
-    // Toujours réinjecter le token depuis la variable globale
     if (authToken) {
       config.headers.Authorization = `Bearer ${authToken}`;
     } else {
@@ -58,7 +61,7 @@ api.interceptors.request.use(
   }
 );
 
-// Intercepteur de réponse pour intercepter les erreurs d'authentification (401/403)
+// Intercepteur de réponse pour la gestion des erreurs HTTP
 api.interceptors.response.use(
   (response) => {
     console.log('[API] Réponse réussie :', response.config.url);
@@ -87,12 +90,12 @@ api.interceptors.response.use(
 // ==========================================
 
 export const loginUser = async (credentials) => {
-  const response = await api.post('/api/auth/login/', credentials);
+  const response = await api.post('/api/auth/login', credentials);
   return response.data;
 };
 
 export const fetchUserProfile = async () => {
-  const response = await api.get('/api/auth/me/');
+  const response = await api.get('/api/users/me');
   return response.data;
 };
 
@@ -102,10 +105,9 @@ export const fetchUserProfile = async () => {
 
 /**
  * Récupère les métriques globales des paiements (Total encaissé, En attente)
- * Réservé Admin & Comptable
  */
 export const fetchPaymentStats = async () => {
-  const response = await api.get('/api/payments/stats/');
+  const response = await api.get('/api/payments/stats');
   return response.data;
 };
 
@@ -113,7 +115,7 @@ export const fetchPaymentStats = async () => {
  * Récupère la liste de tous les paiements (Réservé Admin & Comptable)
  */
 export const fetchAllPayments = async () => {
-  const response = await api.get('/api/payments/');
+  const response = await api.get('/api/payments');
   let data = response.data;
   
   console.log('[API] fetchAllPayments - response.data brut:', data);
@@ -133,7 +135,7 @@ export const fetchAllPayments = async () => {
  * Soumettre un nouveau versement (Statut PENDING par défaut)
  */
 export const createPayment = async (paymentData) => {
-  const response = await api.post('/api/payments/', paymentData);
+  const response = await api.post('/api/payments', paymentData);
   return response.data;
 };
 
@@ -141,30 +143,27 @@ export const createPayment = async (paymentData) => {
  * Validation d'un paiement par le Comptable (Passe le statut à APPROVED)
  */
 export const validatePayment = async (paymentId) => {
-  const response = await api.patch(`/api/payments/${paymentId}/validate/`);
+  const response = await api.patch(`/api/payments/${paymentId}/validate`);
   return response.data;
 };
 
 /**
  * Rejet d'un paiement par le Comptable avec motif (Passe le statut à REJECTED)
- * Gère à la fois les schémas JSON (reason, rejection_reason) et les query parameters
  */
 export const rejectPayment = async (paymentId, reason) => {
   const cleanReason = typeof reason === 'string' ? reason.trim() : String(reason || '');
 
   try {
-    // 1. Première tentative : Transmission en body JSON avec les clés Pydantic usuelles
-    const response = await api.patch(`/api/payments/${paymentId}/reject/`, {
+    const response = await api.patch(`/api/payments/${paymentId}/reject`, {
       reason: cleanReason,
       rejection_reason: cleanReason,
     });
     return response.data;
   } catch (error) {
-    // 2. Fallback si FastAPI attendait la raison en Query Parameter (?reason=...)
     if (error?.response?.status === 400 || error?.response?.status === 422) {
       console.warn('[API] Rejet en JSON échoué (400/422), tentative en Query Parameter...');
       const fallbackResponse = await api.patch(
-        `/api/payments/${paymentId}/reject/`,
+        `/api/payments/${paymentId}/reject`,
         null,
         { params: { reason: cleanReason, rejection_reason: cleanReason } }
       );
@@ -178,7 +177,7 @@ export const rejectPayment = async (paymentId, reason) => {
  * Récupère l'état du compte financier d'un élève
  */
 export const fetchStudentAccount = async (studentId) => {
-  const response = await api.get(`/api/payments/account/${studentId}/`);
+  const response = await api.get(`/api/payments/account/${studentId}`);
   return response.data;
 };
 
@@ -186,7 +185,7 @@ export const fetchStudentAccount = async (studentId) => {
  * Récupère l'historique des paiements d'un élève
  */
 export const fetchStudentPaymentHistory = async (studentId) => {
-  const response = await api.get(`/api/payments/history/${studentId}/`);
+  const response = await api.get(`/api/payments/history/${studentId}`);
   return response.data;
 };
 
@@ -194,18 +193,130 @@ export const fetchStudentPaymentHistory = async (studentId) => {
 // 3. ADMINISTRATION (Admin)
 // ==========================================
 
-export const createParent = async (parentData) => {
-  const response = await api.post('/api/admin/parents/', parentData);
-  return response.data;
+
+/**
+ * Création d'un utilisateur générique (Admin)
+ */
+export const createUser = async (userData) => {
+  try {
+    const response = await api.post('/api/admin/users', userData);
+    return response.data;
+  } catch (error) {
+    const role = (userData && userData.role) || '';
+    if ((error?.response?.status === 400 || error?.response?.status === 422) && role.toUpperCase() === 'COMPTABLE') {
+      const fallback = { ...userData, role: 'ACCOUNTANT' };
+      const retryResp = await api.post('/api/admin/users', fallback);
+      return retryResp.data;
+    }
+    throw error;
+  }
 };
 
 export const createClass = async (classData) => {
-  const response = await api.post('/api/admin/classes/', classData);
+  const response = await api.post('/api/admin/classes', classData);
   return response.data;
 };
 
 export const createStudent = async (studentData) => {
-  const response = await api.post('/api/admin/students/', studentData);
+  const response = await api.post('/api/students', studentData);
+  return response.data;
+};
+
+export const getStudents = async () => {
+  const response = await api.get('/api/students');
+  return response.data;
+};
+
+export const getStudent = async (studentId) => {
+  const response = await api.get(`/api/students/${studentId}`);
+  return response.data;
+};
+
+export const updateStudent = async (studentId, studentData) => {
+  const response = await api.put(`/api/students/${studentId}`, studentData);
+  return response.data;
+};
+
+export const toggleStudentStatus = async (studentId) => {
+  const response = await api.patch(`/api/students/${studentId}/status`);
+  return response.data;
+};
+
+export const getStudentTuition = async (studentId) => {
+  const response = await api.get(`/api/students/${studentId}/tuition`);
+  return response.data;
+};
+
+export const setStudentTuition = async (studentId, tuitionData) => {
+  const response = await api.post(`/api/students/${studentId}/tuition`, tuitionData);
+  return response.data;
+};
+
+export const updateStudentTuition = async (studentId, tuitionData) => {
+  const response = await api.put(`/api/students/${studentId}/tuition`, tuitionData);
+  return response.data;
+};
+
+// ==========================================
+// GESTION DES COMPTABLES
+// ==========================================
+
+export const createAccountant = async (accountantData) => {
+  const response = await api.post('/api/users/accountants', accountantData);
+  return response.data;
+};
+
+export const getAccountants = async () => {
+  const response = await api.get('/api/users/accountants');
+  return response.data;
+};
+
+export const getAccountant = async (accountantId) => {
+  const response = await api.get(`/api/users/accountants/${accountantId}`);
+  return response.data;
+};
+
+export const updateAccountant = async (accountantId, accountantData) => {
+  const response = await api.put(`/api/users/accountants/${accountantId}`, accountantData);
+  return response.data;
+};
+
+export const toggleAccountantStatus = async (accountantId) => {
+  const response = await api.patch(`/api/users/accountants/${accountantId}/status`);
+  return response.data;
+};
+
+// ==========================================
+// GESTION DES PARENTS
+// ==========================================
+
+export const createParent = async (parentData) => {
+  const response = await api.post('/api/users/parents', parentData);
+  return response.data;
+};
+
+export const getParents = async () => {
+  const response = await api.get('/api/users/parents');
+  return response.data;
+};
+
+export const getParent = async (parentId) => {
+  const response = await api.get(`/api/users/parents/${parentId}`);
+  return response.data;
+};
+
+export const updateParent = async (parentId, parentData) => {
+  const response = await api.put(`/api/users/parents/${parentId}`, parentData);
+  return response.data;
+};
+
+export const toggleParentStatus = async (parentId) => {
+  const response = await api.patch(`/api/users/parents/${parentId}/status`);
+  return response.data;
+};
+
+export const getParentChildrenCount = async (parentId) => {
+  const response = await api.get(`/api/users/parents/${parentId}/children-count`);
   return response.data;
 };
 

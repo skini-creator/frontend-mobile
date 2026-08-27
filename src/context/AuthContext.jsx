@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useState, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { setAuthToken } from '../services/api';
 
@@ -22,7 +22,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        // Utilisation de getItem pour une compatibilité Web/Mobile optimale
         const tokenValue = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
         const userValue = await AsyncStorage.getItem(AUTH_USER_KEY);
 
@@ -50,7 +49,12 @@ export function AuthProvider({ children }) {
       const response = await api.post('/api/auth/login', { email, password });
       const data = response.data || {};
       const jwtToken = data.access_token || data.token || data.accessToken || null;
-      const userData = data.user || { role: data.role || 'PARENT', email };
+      const userData = data.user || {
+        email,
+        role: data.role || 'PARENT',
+        first_name: data.full_name ? data.full_name.split(' ')[0] : undefined,
+        last_name: data.full_name ? data.full_name.split(' ').slice(1).join(' ') : undefined,
+      };
 
       if (!jwtToken) {
         throw new Error("Le token d'authentification est manquant.");
@@ -61,7 +65,7 @@ export function AuthProvider({ children }) {
       setToken(jwtToken);
       setUser(userData);
 
-      // Persistance séparée (plus stable sur le web)
+      // Persistance séparée
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, jwtToken);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
 
@@ -78,12 +82,12 @@ export function AuthProvider({ children }) {
   // 3. Déconnexion utilisateur
   const logout = async () => {
     try {
-      // Réinitialisation d'abord du state et des entêtes API
+      // Réinitialisation du state et des entêtes API
       setToken(null);
       setUser(null);
       setAuthToken(null);
 
-      // Suppression des clés une par une
+      // Suppression des clés
       await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
       await AsyncStorage.removeItem(AUTH_USER_KEY);
     } catch (error) {
@@ -98,4 +102,9 @@ export function AuthProvider({ children }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// Hook utilitaire pour consommer le contexte
+export function useAuth() {
+  return useContext(AuthContext);
 }

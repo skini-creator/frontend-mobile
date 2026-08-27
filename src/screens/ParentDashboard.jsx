@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import api from '../services/api';
+import api, { createPayment } from '../services/api';
 
 export default function ParentDashboard() {
   const { user, logout } = useContext(AuthContext);
@@ -109,13 +109,14 @@ export default function ParentDashboard() {
     try {
       const studentId = selectedChild.id || selectedChild.student_id || selectedChild._id;
 
-      await api.post('/api/payments/', {
+      const resp = await createPayment({
         student_id: studentId,
         amount: amount,
         reference: transactionRef.trim() || undefined,
         payment_method: operator,
         operator: operator,
       });
+      console.log('[ParentDashboard] Paiement déclaré:', resp);
 
       Alert.alert(
         'Déclaration envoyée',

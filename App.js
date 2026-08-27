@@ -1,85 +1,57 @@
-import React, { useContext } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { AuthProvider, AuthContext } from './src/context/AuthContext';
-import LoginScreen from './src/screens/LoginScreen';
-import ParentDashboard from './src/screens/ParentDashboard';
+import React from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AdminDashboard from './src/screens/AdminDashboard';
 import ComptableDashboard from './src/screens/ComptableDashboard';
-import { ActivityIndicator, View, StyleSheet, Platform } from 'react-native';
+import LoginScreen from './src/screens/LoginScreen';
+import ParentDashboard from './src/screens/ParentDashboard';
 
-const Stack = createNativeStackNavigator();
-
-function RoleBasedDashboard() {
-  const { user } = useContext(AuthContext);
-
-  if (!user) {
-    return null;
-  }
-
-  switch (user.role?.toUpperCase()) {
-    case 'ADMIN':
-      return <AdminDashboard />;
-    case 'COMPTABLE':
-    case 'ACCOUNTANT':
-      return <ComptableDashboard />;
-    default:
-      return <ParentDashboard />;
-  }
-}
-
-function RootNavigator() {
-  const { token, user, isLoading } = useContext(AuthContext);
+function AppContent() {
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2f6cb3" />
+        <ActivityIndicator size="large" color="#2563eb" />
+        <Text style={styles.loadingText}>Chargement...</Text>
       </View>
     );
   }
 
-  const isSignedIn = !!token && !!user;
+  if (!user) {
+    return <LoginScreen />;
+  }
 
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isSignedIn ? (
-        <Stack.Screen name="Dashboard" component={RoleBasedDashboard} />
-      ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
-      )}
-    </Stack.Navigator>
-  );
+  const role = String(user.role || '').toUpperCase();
+
+  if (role === 'ADMIN' || role === 'ADMINISTRATOR') {
+    return <AdminDashboard />;
+  }
+
+  if (role === 'COMPTABLE' || role === 'ACCOUNTANT') {
+    return <ComptableDashboard />;
+  }
+
+  return <ParentDashboard />;
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      {/* 
-        Le View enveloppant avec dataSet et className empêche Google Chrome 
-        de traduire la page web et de détruire les noeuds DOM de React Native Web.
-      */}
-      <View 
-        style={styles.rootContainer} 
-        className="notranslate"
-        dataSet={Platform.OS === 'web' ? { google: 'notranslate' } : undefined}
-      >
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-      </View>
+      <AppContent />
     </AuthProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-  },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#f8fafc',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#475569',
   },
 });

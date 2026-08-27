@@ -3,7 +3,22 @@
     "name": "School Portal",
     "slug": "school-portal-mobile",
     "version": "1.0.0",
-    "platforms": ["ios", "android", "web"],
-    "sdkVersion": "49.0.0"
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "android": {
+      "package": "com.anonymous.schoolportalmobile"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e231bea1-a762-44cf-9b8e-4792337f100b"
+      }
+    },
+    "owner": "bogha-prod",
+    "ios": {
+      "bundleIdentifier": "com.anonymous.schoolportalmobile"
+    }
   }
 }

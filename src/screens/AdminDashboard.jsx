@@ -12,9 +12,16 @@ import {
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { fetchAllPayments } from '../services/api';
+import AdminAccountantsScreen from './AdminAccountantsScreen';
+import AdminParentsScreen from './AdminParentsScreen';
+import AdminStudentsScreen from './AdminStudentsScreen';
+import AdminStudentDetailScreen from './AdminStudentDetailScreen';
 
 export default function AdminDashboard() {
   const { user, logout } = useContext(AuthContext);
+
+  const [activeTab, setActiveTab] = useState('payments'); // payments, accountants, parents, students
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -134,83 +141,180 @@ export default function AdminDashboard() {
   };
 
   return (
-    <ScrollView
-      style={styles.page}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* 1. En-tête */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>
-            {user?.first_name ? `Bonjour ${user.first_name}` : 'Espace Administration'}
-          </Text>
-          <Text style={styles.subtitle}>Surveillance financière et gestion des encaissements</Text>
-        </View>
-        <Pressable style={styles.logoutButton} onPress={logout}>
-          <Text style={styles.logoutText}>Déconnexion</Text>
-        </Pressable>
-      </View>
-
-      {/* 2. Cartes KPI / Statistiques */}
-      <View style={styles.kpiContainer}>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Total Encaissé</Text>
-          <Text style={styles.kpiValueSuccess}>
-            {stats.totalCollected.toLocaleString('fr-FR')} FCFA
-          </Text>
-        </View>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>En attention</Text>
-          <Text style={styles.kpiValueWarning}>{stats.pendingCount}</Text>
-        </View>
-        <View style={styles.kpiCard}>
-          <Text style={styles.kpiLabel}>Reçus totaux</Text>
-          <Text style={styles.kpiValue}>{stats.totalCount}</Text>
-        </View>
-      </View>
-
-      {/* 3. Barre de recherche */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Paiements récents</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher par référence, élève, classe..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+    <View style={styles.container}>
+      {/* Gestion du détail étudiant */}
+      {selectedStudent && (
+        <AdminStudentDetailScreen
+          studentId={selectedStudent.id}
+          onBack={() => setSelectedStudent(null)}
         />
-      </View>
+      )}
 
-      {/* 4. Liste des paiements */}
-      {loading && payments.length === 0 ? (
-        <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 20 }} />
-      ) : filteredPayments.length === 0 ? (
-        <Text style={styles.emptyText}>Aucun paiement trouvé.</Text>
-      ) : (
-        <View style={styles.list}>
-          {filteredPayments.map((item) => {
-            const dateStr = item.payment_date
-              ? new Date(item.payment_date).toLocaleDateString('fr-FR', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : 'N/A';
+      {/* Affichage normal du tableau de bord */}
+      {!selectedStudent && (
+        <>
+          {/* En-tête */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.title}>
+                {user?.first_name ? `Bonjour ${user.first_name}` : 'Espace Administration'}
+              </Text>
+              <Text style={styles.subtitle}>
+                {activeTab === 'payments'
+                  ? 'Surveillance financière et gestion des encaissements'
+                  : activeTab === 'accountants'
+                  ? 'Gestion des comptables'
+                  : activeTab === 'parents'
+                  ? 'Gestion des parents'
+                  : 'Gestion des élèves'}
+              </Text>
+            </View>
+            <Pressable style={styles.logoutButton} onPress={logout}>
+              <Text style={styles.logoutText}>Déconnexion</Text>
+            </Pressable>
+          </View>
 
-            const displayName =
-              item.student_name ||
-              item.student?.full_name ||
-              (item.student?.first_name
-                ? `${item.student.first_name} ${item.student.last_name || ''}`
-                : null) ||
-              `Élève #${item.student_account_id || item.student_id || item.id}`;
+          {/* Onglets de navigation */}
+          <View style={styles.tabContainer}>
+            <Pressable
+              style={[styles.tab, activeTab === 'payments' && styles.tabActive]}
+              onPress={() => setActiveTab('payments')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'payments' && styles.tabTextActive,
+                ]}
+              >
+                Paiements
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tab, activeTab === 'accountants' && styles.tabActive]}
+              onPress={() => setActiveTab('accountants')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'accountants' && styles.tabTextActive,
+                ]}
+              >
+                Comptables
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tab, activeTab === 'parents' && styles.tabActive]}
+              onPress={() => setActiveTab('parents')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'parents' && styles.tabTextActive,
+                ]}
+              >
+                Parents
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.tab, activeTab === 'students' && styles.tabActive]}
+              onPress={() => setActiveTab('students')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'students' && styles.tabTextActive,
+                ]}
+              >
+                Élèves
+              </Text>
+            </Pressable>
+          </View>
 
-            const displayClass = item.class_name ? ` • ${item.class_name}` : '';
-            const badgeConfig = getBadgeStyle(item.status);
+          {/* Contenu par onglet */}
+          {activeTab === 'payments' && renderPayments()}
+          {activeTab === 'accountants' && (
+            <AdminAccountantsScreen onBack={() => {}} />
+          )}
+          {activeTab === 'parents' && (
+            <AdminParentsScreen onBack={() => {}} />
+          )}
+          {activeTab === 'students' && (
+            <AdminStudentsScreen
+              onBack={() => {}}
+              onSelectStudent={setSelectedStudent}
+            />
+          )}
+        </>
+      )}
+    </View>
+  );
 
-            return (
+  function renderPayments() {
+    return (
+      <ScrollView
+        style={styles.page}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {/* 2. Cartes KPI / Statistiques */}
+        <View style={styles.kpiContainer}>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>Total Encaissé</Text>
+            <Text style={styles.kpiValueSuccess}>
+              {stats.totalCollected.toLocaleString('fr-FR')} FCFA
+            </Text>
+          </View>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>En attention</Text>
+            <Text style={styles.kpiValueWarning}>{stats.pendingCount}</Text>
+          </View>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>Reçus totaux</Text>
+            <Text style={styles.kpiValue}>{stats.totalCount}</Text>
+          </View>
+        </View>
+
+        {/* 3. Barre de recherche */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Paiements récents</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher par référence, élève, classe..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* 4. Liste des paiements */}
+        {loading && payments.length === 0 ? (
+          <ActivityIndicator size="large" color="#2563eb" style={{ marginTop: 20 }} />
+        ) : filteredPayments.length === 0 ? (
+          <Text style={styles.emptyText}>Aucun paiement trouvé.</Text>
+        ) : (
+          <View style={styles.list}>
+            {filteredPayments.map((item) => {
+              const dateStr = item.payment_date
+                ? new Date(item.payment_date).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'N/A';
+
+              const displayName =
+                item.student_name ||
+                item.student?.full_name ||
+                (item.student?.first_name
+                  ? `${item.student.first_name} ${item.student.last_name || ''}`
+                  : null) ||
+                `Élève #${item.student_account_id || item.student_id || item.id}`;
+
+              const displayClass = item.class_name ? ` • ${item.class_name}` : '';
+              const badgeConfig = getBadgeStyle(item.status);
+
+              return (
               <Pressable
                 key={item.id}
                 style={styles.card}
@@ -310,10 +414,42 @@ export default function AdminDashboard() {
         </View>
       </Modal>
     </ScrollView>
-  );
+    );
+  }
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  // Onglets
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  tab: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: '#2563eb',
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748b',
+  },
+  tabTextActive: {
+    color: '#2563eb',
+    fontWeight: '600',
+  },
   page: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 20, paddingBottom: 40 },
   header: {

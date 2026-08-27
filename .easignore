@@ -1,0 +1,7 @@
+# Ignore native folders when using Expo managed config
+/android
+/ios
+
+# Optional: exclude local build artifacts
+.expo
+node_modules

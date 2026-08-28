@@ -116,7 +116,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
         const payload = {
           first_name: firstName,
           last_name: lastName,
-          parent_id: parseInt(parentId),
+          parent_id: parentId,
           class_id: classId ? parseInt(classId) : null,
         };
         await createStudent(payload);

@@ -217,6 +217,11 @@ export const createClass = async (classData) => {
   return response.data;
 };
 
+export const getClasses = async () => {
+  const response = await api.get('/api/school/classes');
+  return response.data;
+};
+
 export const createStudent = async (studentData) => {
   const response = await api.post('/api/students', studentData);
   return response.data;

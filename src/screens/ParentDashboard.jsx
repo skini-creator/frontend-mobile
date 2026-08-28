@@ -228,7 +228,10 @@ export default function ParentDashboard() {
               <View style={[styles.financialRow, styles.financialRowBorder]}>
                 <Text style={styles.financialLabelBold}>Solde Restant :</Text>
                 <Text style={styles.financialValueBold}>
-                  {(account?.remaining_amount ?? 0).toLocaleString()} FCFA
+                  {((account?.remaining_amount !== undefined && account?.remaining_amount !== null && account?.remaining_amount > 0)
+                    ? account.remaining_amount
+                    : Math.max(0, (account?.total_amount || 0) - (account?.paid_amount || 0))
+                  ).toLocaleString()} FCFA
                 </Text>
               </View>
               {account?.status && (

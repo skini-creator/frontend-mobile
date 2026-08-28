@@ -19,6 +19,7 @@ import {
   updateStudent,
   toggleStudentStatus,
   getParents,
+  getClasses,
   getStudentTuition,
 } from '../services/api';
 
@@ -60,15 +61,26 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     }
   };
 
+  const loadClasses = async () => {
+    try {
+      const data = await getClasses();
+      setClassList(data || []);
+    } catch (error) {
+      console.error('Erreur chargement classes:', error);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadStudents();
+    await loadClasses();
     setRefreshing(false);
   };
 
   useEffect(() => {
     loadStudents();
     loadParents();
+    loadClasses();
   }, []);
 
   const handleOpenModal = (student = null) => {
@@ -288,12 +300,57 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                           >
                             {parent.first_name} {parent.last_name}
                           </Text>
-                        </Pressable>
-                      ))}
                     </ScrollView>
                   </View>
                 </>
               )}
+
+              <Text style={styles.label}>Classe (6ème à Terminale)*</Text>
+              <View style={styles.pickerContainer}>
+                <ScrollView style={styles.picker} nestedScrollEnabled={true}>
+                  {classList.length > 0 ? (
+                    classList.map((cls) => (
+                      <Pressable
+                        key={cls.id}
+                        style={[
+                          styles.pickerItem,
+                          classId === cls.id.toString() && styles.pickerItemSelected,
+                        ]}
+                        onPress={() => setClassId(cls.id.toString())}
+                      >
+                        <Text
+                          style={[
+                            styles.pickerItemText,
+                            classId === cls.id.toString() && styles.pickerItemTextSelected,
+                          ]}
+                        >
+                          {cls.name}
+                        </Text>
+                      </Pressable>
+                    ))
+                  ) : (
+                    ['6ème A', '6ème B', '5ème A', '4ème A', '3ème A', '2nde C', '1ère D', 'Terminale C', 'Terminale D'].map((name, idx) => (
+                      <Pressable
+                        key={idx}
+                        style={[
+                          styles.pickerItem,
+                          classId === name && styles.pickerItemSelected,
+                        ]}
+                        onPress={() => setClassId(name)}
+                      >
+                        <Text
+                          style={[
+                            styles.pickerItemText,
+                            classId === name && styles.pickerItemTextSelected,
+                          ]}
+                        >
+                          {name}
+                        </Text>
+                      </Pressable>
+                    ))
+                  )}
+                </ScrollView>
+              </View>
 
               <Pressable style={styles.saveButton} onPress={handleSave}>
                 <Text style={styles.saveButtonText}>

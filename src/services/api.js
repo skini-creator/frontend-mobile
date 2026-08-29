@@ -143,31 +143,83 @@ export const createPayment = async (paymentData) => {
  * Validation d'un paiement par le Comptable (Passe le statut à APPROVED)
  */
 export const validatePayment = async (paymentId) => {
-  const response = await api.patch(`/api/payments/${paymentId}/validate`);
-  return response.data;
+  const cleanId = typeof paymentId === 'object' ? (paymentId?.id || paymentId?.payment_id || paymentId?._id) : paymentId;
+  console.log('[API] Tentative de validation du paiement ID:', cleanId);
+
+  // Tentative 1: PATCH /api/payments/{id}/validate avec corps JSON {}
+  try {
+    const response = await api.patch(`/api/payments/${cleanId}/validate`, {});
+    return response.data;
+  } catch (error1) {
+    console.warn('[API] validatePayment (PATCH {}) a échoué (status ' + error1?.response?.status + '), tentative avec payload status...');
+
+    // Tentative 2: PATCH /api/payments/{id}/validate avec { status: 'APPROVED' }
+    try {
+      const response = await api.patch(`/api/payments/${cleanId}/validate`, { status: 'APPROVED' });
+      return response.data;
+    } catch (error2) {
+      console.warn('[API] validatePayment (PATCH status:APPROVED) a échoué, tentative POST...');
+
+      // Tentative 3: POST /api/payments/{id}/validate
+      try {
+        const response = await api.post(`/api/payments/${cleanId}/validate`, {});
+        return response.data;
+      } catch (error3) {
+        console.warn('[API] validatePayment (POST) a échoué, tentative PUT...');
+
+        // Tentative 4: PUT /api/payments/{id}/validate
+        try {
+          const response = await api.put(`/api/payments/${cleanId}/validate`, {});
+          return response.data;
+        } catch (error4) {
+          console.warn('[API] validatePayment (PUT) a échoué, tentative PATCH /api/payments/{id} direct...');
+
+          // Tentative 5: PATCH /api/payments/{id} { status: 'APPROVED' }
+          try {
+            const response = await api.patch(`/api/payments/${cleanId}`, { status: 'APPROVED' });
+            return response.data;
+          } catch (error5) {
+            console.error('[API] Toutes les tentatives de validation du paiement ont échoué.');
+            throw error1;
+          }
+        }
+      }
+    }
+  }
 };
 
 /**
  * Rejet d'un paiement par le Comptable avec motif (Passe le statut à REJECTED)
  */
 export const rejectPayment = async (paymentId, reason) => {
+  const cleanId = typeof paymentId === 'object' ? (paymentId?.id || paymentId?.payment_id || paymentId?._id) : paymentId;
   const cleanReason = typeof reason === 'string' ? reason.trim() : String(reason || '');
 
   try {
-    const response = await api.patch(`/api/payments/${paymentId}/reject`, {
+    const response = await api.patch(`/api/payments/${cleanId}/reject`, {
       reason: cleanReason,
       rejection_reason: cleanReason,
+      status: 'REJECTED',
     });
     return response.data;
   } catch (error) {
-    if (error?.response?.status === 400 || error?.response?.status === 422) {
-      console.warn('[API] Rejet en JSON échoué (400/422), tentative en Query Parameter...');
-      const fallbackResponse = await api.patch(
-        `/api/payments/${paymentId}/reject`,
-        null,
-        { params: { reason: cleanReason, rejection_reason: cleanReason } }
-      );
-      return fallbackResponse.data;
+    if (error?.response?.status === 400 || error?.response?.status === 422 || error?.response?.status === 405) {
+      console.warn('[API] Rejet en JSON échoué (' + error?.response?.status + '), tentative en Query Parameter...');
+      try {
+        const fallbackResponse = await api.patch(
+          `/api/payments/${cleanId}/reject`,
+          null,
+          { params: { reason: cleanReason, rejection_reason: cleanReason } }
+        );
+        return fallbackResponse.data;
+      } catch (fallbackErr) {
+        try {
+          const postResp = await api.post(`/api/payments/${cleanId}/reject`, { reason: cleanReason });
+          return postResp.data;
+        } catch (postErr) {
+          throw error;
+        }
+      }
     }
     throw error;
   }

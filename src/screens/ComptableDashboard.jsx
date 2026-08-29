@@ -99,16 +99,22 @@ export default function ComptableDashboard() {
     await fetchComptableData(false);
   };
 
-  const handleValidate = async (paymentId) => {
+  const handleValidate = async (targetPayment) => {
+    const pId = typeof targetPayment === 'object'
+      ? (targetPayment?.id || targetPayment?.payment_id || targetPayment?._id)
+      : targetPayment;
+
     try {
       setActionLoading(true);
-      await validatePayment(paymentId);
+      await validatePayment(pId);
       Alert.alert('Succès', 'Le paiement a été validé avec succès.');
       setSelectedPayment(null);
       await fetchComptableData(false);
     } catch (error) {
-      console.error(error);
-      Alert.alert('Erreur', error.response?.data?.detail || 'Échec de la validation.');
+      console.error('[ComptableDashboard] Erreur validation:', error);
+      const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Échec de la validation.';
+      const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      Alert.alert('Erreur', msg);
     } finally {
       if (isMountedRef.current) setActionLoading(false);
     }
@@ -116,21 +122,24 @@ export default function ComptableDashboard() {
 
   const handleConfirmReject = async () => {
     const finalReason = rejectionReason.trim() || 'Référence introuvable';
+    const pId = selectedPayment?.id || selectedPayment?.payment_id || selectedPayment?._id;
 
     try {
       setActionLoading(true);
-      await rejectPayment(selectedPayment.id, finalReason);
-      
+      await rejectPayment(pId, finalReason);
+
       Alert.alert('Information', `Paiement rejeté. Motif envoyé au parent : "${finalReason}"`);
-      
+
       setIsRejecting(false);
       setRejectionReason('');
       setSelectedPayment(null);
-      
+
       await fetchComptableData(false);
     } catch (error) {
       console.error('[ComptableDashboard] Erreur rejet:', error);
-      Alert.alert('Erreur', error.response?.data?.detail || 'Échec du rejet.');
+      const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Échec du rejet.';
+      const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+      Alert.alert('Erreur', msg);
     } finally {
       if (isMountedRef.current) setActionLoading(false);
     }
@@ -401,7 +410,7 @@ export default function ComptableDashboard() {
                       <View style={{ flexDirection: 'row', gap: 10 }}>
                         <Pressable
                           style={[styles.actionBtn, { backgroundColor: '#16a34a', flex: 1 }]}
-                          onPress={() => handleValidate(selectedPayment.id)}
+                          onPress={() => handleValidate(selectedPayment)}
                         >
                           <Text style={styles.actionBtnText}>Valider</Text>
                         </Pressable>

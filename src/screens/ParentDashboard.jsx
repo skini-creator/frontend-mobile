@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import api, { createPayment } from '../services/api';
+import api, { createPayment, getClasses } from '../services/api';
 
 export default function ParentDashboard() {
   const { user, logout } = useContext(AuthContext);
@@ -19,6 +19,7 @@ export default function ParentDashboard() {
   const [selectedChild, setSelectedChild] = useState(null);
   const [account, setAccount] = useState(null);
   const [paymentHistory, setPaymentHistory] = useState([]);
+  const [classesMap, setClassesMap] = useState({});
 
   // Formulaire de paiement
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -38,29 +39,70 @@ export default function ParentDashboard() {
     return 'Espace Parent';
   }, [user]);
 
-  // Chargement initial de la liste des enfants
+  // Helper pour résoudre la classe de l'élève
+  const resolveClassName = (student) => {
+    if (!student) return 'N/A';
+    if (student.class_name) return student.class_name;
+    if (typeof student.class === 'string' && student.class.trim()) return student.class;
+    if (typeof student.class === 'object' && student.class !== null) {
+      if (student.class.name) return student.class.name;
+      if (student.class.label) return student.class.label;
+    }
+    if (student.class_info?.name) return student.class_info.name;
+    if (student.classe) return student.classe;
+    if (student.classroom) return student.classroom;
+
+    const classId = student.class_id || student.classId;
+    if (classId && classesMap[String(classId)]) {
+      return classesMap[String(classId)];
+    }
+
+    return 'N/A';
+  };
+
+  // Chargement initial de la liste des enfants et des classes de l'établissement
   useEffect(() => {
-    async function loadChildren() {
+    async function initData() {
       setLoading(true);
       try {
-        const response = await api.get('/api/students/my-children');
-        const data = response.data || [];
-        setChildrenList(data);
-        if (data.length > 0) {
-          setSelectedChild(data[0]);
+        const [childrenRes, classesRes] = await Promise.allSettled([
+          api.get('/api/students/my-children'),
+          getClasses(),
+        ]);
+
+        let children = [];
+        if (childrenRes.status === 'fulfilled') {
+          const raw = childrenRes.value?.data;
+          children = Array.isArray(raw) ? raw : (raw?.data || raw?.items || []);
+        }
+        setChildrenList(children);
+        if (children.length > 0) {
+          setSelectedChild(children[0]);
+        }
+
+        if (classesRes.status === 'fulfilled') {
+          const rawClasses = classesRes.value;
+          const classList = Array.isArray(rawClasses) ? rawClasses : (rawClasses?.data || rawClasses?.items || []);
+          const map = {};
+          classList.forEach((cls) => {
+            if (cls.id) {
+              map[String(cls.id)] = cls.name || cls.class_name || cls.label;
+            }
+          });
+          setClassesMap(map);
         }
       } catch (error) {
-        console.warn(error);
+        console.warn('[ParentDashboard] Erreur initialisation:', error);
         Alert.alert('Erreur', 'Impossible de récupérer la liste des enfants.');
       } finally {
         setLoading(false);
       }
     }
 
-    loadChildren();
+    initData();
   }, []);
 
-  // Chargement du solde et de l'historique lors du changement d'enfant
+  // Chargement du solde et de l'historique lors du changement d'enfant (Résilient & multi-endpoints)
   const loadAccountAndHistory = async () => {
     if (!selectedChild) {
       setAccount(null);
@@ -72,16 +114,70 @@ export default function ParentDashboard() {
     const studentId = selectedChild.id || selectedChild.student_id || selectedChild._id;
 
     try {
-      const [accountRes, historyRes] = await Promise.all([
+      const [accountRes, tuitionRes, historyRes] = await Promise.allSettled([
         api.get(`/api/payments/account/${studentId}`),
+        api.get(`/api/students/${studentId}/tuition`),
         api.get(`/api/payments/history/${studentId}`),
       ]);
 
-      setAccount(accountRes.data || null);
-      setPaymentHistory(historyRes.data || []);
+      let historyData = [];
+      if (historyRes.status === 'fulfilled') {
+        const rawHistory = historyRes.value?.data;
+        historyData = Array.isArray(rawHistory)
+          ? rawHistory
+          : (rawHistory?.data || rawHistory?.payments || rawHistory?.items || []);
+      }
+      setPaymentHistory(historyData);
+
+      let rawAccount = {};
+      if (accountRes.status === 'fulfilled') {
+        rawAccount = accountRes.value?.data?.data || accountRes.value?.data?.account || accountRes.value?.data || {};
+      }
+      let rawTuition = {};
+      if (tuitionRes.status === 'fulfilled') {
+        rawTuition = tuitionRes.value?.data?.data || tuitionRes.value?.data?.tuition || tuitionRes.value?.data || {};
+      }
+
+      // Extraction résiliente du montant total
+      const totalAmount = Number(
+        rawAccount.total_amount ?? rawAccount.total_tuition ?? rawAccount.total ?? rawAccount.montant_total ??
+        rawTuition.total_amount ?? rawTuition.total_tuition ?? rawTuition.amount ?? 0
+      );
+
+      // Calcul dynamique des paiements déjà validés depuis l'historique
+      const approvedPaidFromHistory = historyData
+        .filter((item) => {
+          const st = String(item.status || '').toUpperCase();
+          return st.includes('APPROV') || st.includes('VALID');
+        })
+        .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+      const fetchedPaid = Number(
+        rawAccount.paid_amount ?? rawAccount.total_paid ?? rawAccount.paid ?? rawAccount.montant_paye ??
+        rawTuition.paid_amount ?? rawTuition.total_paid ?? rawTuition.paid ?? 0
+      );
+
+      const paidAmount = Math.max(fetchedPaid, approvedPaidFromHistory);
+
+      let remainingAmount = Number(
+        rawAccount.remaining_amount ?? rawAccount.balance ?? rawAccount.solde ?? rawAccount.remaining ??
+        rawTuition.remaining_amount ?? rawTuition.balance ?? 0
+      );
+
+      if (remainingAmount <= 0 && totalAmount > 0) {
+        remainingAmount = Math.max(0, totalAmount - paidAmount);
+      }
+
+      const accountStatus = rawAccount.status || rawTuition.status || (remainingAmount === 0 && totalAmount > 0 ? 'SOLDE' : 'EN_COURS');
+
+      setAccount({
+        total_amount: totalAmount,
+        paid_amount: paidAmount,
+        remaining_amount: remainingAmount,
+        status: accountStatus,
+      });
     } catch (error) {
-      console.warn(error);
-      Alert.alert('Erreur', 'Impossible de récupérer les données financières.');
+      console.warn('[ParentDashboard] Erreur récupération données financières:', error);
     } finally {
       setLoading(false);
     }
@@ -179,11 +275,7 @@ export default function ParentDashboard() {
                 selectedChild &&
                 studentId === (selectedChild.id || selectedChild.student_id || selectedChild._id);
 
-              const className =
-                student.class_name ||
-                (typeof student.class === 'object' ? student.class?.name : student.class) ||
-                student.class_info?.name ||
-                'N/A';
+              const className = resolveClassName(student);
 
               return (
                 <Pressable
@@ -228,10 +320,7 @@ export default function ParentDashboard() {
               <View style={[styles.financialRow, styles.financialRowBorder]}>
                 <Text style={styles.financialLabelBold}>Solde Restant :</Text>
                 <Text style={styles.financialValueBold}>
-                  {((account?.remaining_amount !== undefined && account?.remaining_amount !== null && account?.remaining_amount > 0)
-                    ? account.remaining_amount
-                    : Math.max(0, (account?.total_amount || 0) - (account?.paid_amount || 0))
-                  ).toLocaleString()} FCFA
+                  {(account?.remaining_amount ?? 0).toLocaleString()} FCFA
                 </Text>
               </View>
               {account?.status && (

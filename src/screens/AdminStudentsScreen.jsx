@@ -300,6 +300,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                           >
                             {parent.first_name} {parent.last_name}
                           </Text>
+                        </Pressable>
+                      ))}
                     </ScrollView>
                   </View>
                 </>

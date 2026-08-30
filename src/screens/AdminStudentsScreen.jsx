@@ -43,7 +43,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     setLoading(true);
     try {
       const data = await getStudents();
-      setStudents(data || []);
+      const list = Array.isArray(data) ? data : (data?.data || data?.students || data?.items || []);
+      setStudents(list);
     } catch (error) {
       console.error('Erreur:', error);
       Alert.alert('Erreur', 'Impossible de charger les élèves.');
@@ -55,7 +56,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
   const loadParents = async () => {
     try {
       const data = await getParents();
-      setParents(data || []);
+      const list = Array.isArray(data) ? data : (data?.data || data?.parents || data?.items || []);
+      setParents(list);
     } catch (error) {
       console.error('Erreur:', error);
     }
@@ -64,7 +66,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
   const loadClasses = async () => {
     try {
       const data = await getClasses();
-      setClassList(data || []);
+      const list = Array.isArray(data) ? data : (data?.data || data?.classes || data?.items || []);
+      setClassList(list);
     } catch (error) {
       console.error('Erreur chargement classes:', error);
     }
@@ -88,8 +91,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
       setEditingId(student.id);
       setFirstName(student.first_name || '');
       setLastName(student.last_name || '');
-      setParentId(student.user_id?.toString() || '');
-      setClassId(student.class_id?.toString() || '');
+      setParentId(student.user_id?.toString() || student.parent_id?.toString() || '');
+      setClassId(student.class_id?.toString() || student.class_name || student.class?.toString() || '');
     } else {
       setEditingId(null);
       setFirstName('');
@@ -101,44 +104,73 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
   };
 
   const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim() || !parentId.trim()) {
+    if (!firstName.trim() || !lastName.trim() || (!editingId && !parentId.trim())) {
       Alert.alert('Erreur', 'Prénom, nom et parent sont obligatoires.');
       return;
     }
 
+    if (!classId) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une classe.');
+      return;
+    }
+
+    // Recherche résiliente de l'objet classe correspondante
+    const selectedClassObj = classList.find(
+      (c) =>
+        String(c.id) === String(classId) ||
+        String(c.name || c.class_name || c.label).toLowerCase() === String(classId).toLowerCase()
+    );
+
+    let numericClassId = selectedClassObj
+      ? (typeof selectedClassObj.id === 'number' ? selectedClassObj.id : parseInt(selectedClassObj.id))
+      : (!isNaN(Number(classId)) ? Number(classId) : null);
+
+    let classNameStr = selectedClassObj
+      ? (selectedClassObj.name || selectedClassObj.class_name || selectedClassObj.label)
+      : String(classId);
+
+    const basePayload = {
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+    };
+
+    if (numericClassId && !isNaN(numericClassId)) {
+      basePayload.class_id = numericClassId;
+    }
+    if (classNameStr) {
+      basePayload.class_name = classNameStr;
+      basePayload.classe = classNameStr;
+      basePayload.classroom = classNameStr;
+    }
+
     if (editingId) {
-      // Modification
       try {
-        const payload = {
-          first_name: firstName,
-          last_name: lastName,
-          class_id: classId ? parseInt(classId) : null,
-        };
-        await updateStudent(editingId, payload);
+        await updateStudent(editingId, basePayload);
         Alert.alert('Succès', 'Élève modifié.');
         setShowModal(false);
         await loadStudents();
       } catch (error) {
-        console.error('Erreur:', error);
-        Alert.alert('Erreur', 'Impossible de modifier l\'élève.');
+        console.error('Erreur modification élève:', error);
+        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de modifier l\'élève.';
+        const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        Alert.alert('Erreur', msg);
       }
     } else {
-      // Création
       try {
-        const payload = {
-          first_name: firstName,
-          last_name: lastName,
-          parent_id: parentId,
-          class_id: classId ? parseInt(classId) : null,
+        const createPayload = {
+          ...basePayload,
+          parent_id: parentId.trim(),
+          user_id: parentId.trim(),
         };
-        await createStudent(payload);
+        await createStudent(createPayload);
         Alert.alert('Succès', 'Élève créé.');
         setShowModal(false);
         await loadStudents();
       } catch (error) {
-        console.error('Erreur:', error);
-        const message = error?.response?.data?.detail || 'Impossible de créer l\'élève.';
-        Alert.alert('Erreur', message);
+        console.error('Erreur création élève:', error);
+        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de créer l\'élève.';
+        const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
+        Alert.alert('Erreur', msg);
       }
     }
   };
@@ -310,46 +342,40 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
               <Text style={styles.label}>Classe (6ème à Terminale)*</Text>
               <View style={styles.pickerContainer}>
                 <ScrollView style={styles.picker} nestedScrollEnabled={true}>
-                  {classList.length > 0 ? (
-                    classList.map((cls) => (
-                      <Pressable
-                        key={cls.id}
-                        style={[
-                          styles.pickerItem,
-                          classId === cls.id.toString() && styles.pickerItemSelected,
-                        ]}
-                        onPress={() => setClassId(cls.id.toString())}
-                      >
-                        <Text
-                          style={[
-                            styles.pickerItemText,
-                            classId === cls.id.toString() && styles.pickerItemTextSelected,
-                          ]}
+                  {Array.isArray(classList) && classList.length > 0 ? (
+                    classList.map((cls) => {
+                      const cId = String(cls.id ?? cls.name ?? '');
+                      const cName = cls.name || cls.class_name || cls.label || `Classe ${cls.id}`;
+                      const isSelected =
+                        String(classId) === String(cls.id) ||
+                        String(classId).toLowerCase() === String(cName).toLowerCase();
+                      return (
+                        <Pressable
+                          key={cls.id || cName}
+                          style={[styles.pickerItem, isSelected && styles.pickerItemSelected]}
+                          onPress={() => setClassId(String(cls.id || cName))}
                         >
-                          {cls.name}
-                        </Text>
-                      </Pressable>
-                    ))
+                          <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
+                            {cName}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
                   ) : (
-                    ['6ème A', '6ème B', '5ème A', '4ème A', '3ème A', '2nde C', '1ère D', 'Terminale C', 'Terminale D'].map((name, idx) => (
-                      <Pressable
-                        key={idx}
-                        style={[
-                          styles.pickerItem,
-                          classId === name && styles.pickerItemSelected,
-                        ]}
-                        onPress={() => setClassId(name)}
-                      >
-                        <Text
-                          style={[
-                            styles.pickerItemText,
-                            classId === name && styles.pickerItemTextSelected,
-                          ]}
+                    ['6ème A', '6ème B', '5ème A', '4ème A', '3ème A', '2nde C', '1ère D', 'Terminale C', 'Terminale D'].map((name, idx) => {
+                      const isSelected = String(classId).toLowerCase() === String(name).toLowerCase();
+                      return (
+                        <Pressable
+                          key={idx}
+                          style={[styles.pickerItem, isSelected && styles.pickerItemSelected]}
+                          onPress={() => setClassId(name)}
                         >
-                          {name}
-                        </Text>
-                      </Pressable>
-                    ))
+                          <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
+                            {name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
                   )}
                 </ScrollView>
               </View>

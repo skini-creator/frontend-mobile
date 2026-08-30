@@ -270,18 +270,47 @@ export const createClass = async (classData) => {
 };
 
 export const getClasses = async () => {
-  const response = await api.get('/api/school/classes');
-  return response.data;
+  try {
+    const response = await api.get('/api/school/classes');
+    let data = response.data;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      data = data.data || data.classes || data.items || [];
+    }
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    try {
+      const fallback = await api.get('/api/admin/classes');
+      let data = fallback.data;
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        data = data.data || data.classes || data.items || [];
+      }
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  }
 };
 
 export const createStudent = async (studentData) => {
-  const response = await api.post('/api/students', studentData);
-  return response.data;
+  try {
+    const response = await api.post('/api/students', studentData);
+    return response.data;
+  } catch (err) {
+    if (err?.response?.status === 307 || err?.response?.status === 404 || err?.response?.status === 405) {
+      const fallback = await api.post('/api/students/', studentData);
+      return fallback.data;
+    }
+    throw err;
+  }
 };
 
 export const getStudents = async () => {
   const response = await api.get('/api/students');
-  return response.data;
+  let data = response.data;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    data = data.data || data.students || data.items || [];
+  }
+  return Array.isArray(data) ? data : [];
 };
 
 export const getStudent = async (studentId) => {
@@ -354,7 +383,11 @@ export const createParent = async (parentData) => {
 
 export const getParents = async () => {
   const response = await api.get('/api/users/parents');
-  return response.data;
+  let data = response.data;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    data = data.data || data.parents || data.items || [];
+  }
+  return Array.isArray(data) ? data : [];
 };
 
 export const getParent = async (parentId) => {

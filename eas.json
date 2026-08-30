@@ -15,6 +15,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
+        "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
         "EAS_BUILD_NPM_LEGACY_PEER_DEPS": "1",
         "GRADLE_OPTS": "-Dorg.gradle.jvmargs=\"-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError\" -Dorg.gradle.daemon=false"
       }

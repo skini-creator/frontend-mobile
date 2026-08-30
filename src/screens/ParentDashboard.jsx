@@ -114,10 +114,11 @@ export default function ParentDashboard() {
     const studentId = selectedChild.id || selectedChild.student_id || selectedChild._id;
 
     try {
-      const [accountRes, tuitionRes, historyRes] = await Promise.allSettled([
+      const [accountRes, tuitionRes, historyRes, studentRes] = await Promise.allSettled([
         api.get(`/api/payments/account/${studentId}`),
         api.get(`/api/students/${studentId}/tuition`),
         api.get(`/api/payments/history/${studentId}`),
+        api.get(`/api/students/${studentId}`),
       ]);
 
       let historyData = [];
@@ -137,38 +138,135 @@ export default function ParentDashboard() {
       if (tuitionRes.status === 'fulfilled') {
         rawTuition = tuitionRes.value?.data?.data || tuitionRes.value?.data?.tuition || tuitionRes.value?.data || {};
       }
-
-      // Extraction résiliente du montant total
-      const totalAmount = Number(
-        rawAccount.total_amount ?? rawAccount.total_tuition ?? rawAccount.total ?? rawAccount.montant_total ??
-        rawTuition.total_amount ?? rawTuition.total_tuition ?? rawTuition.amount ?? 0
-      );
-
-      // Calcul dynamique des paiements déjà validés depuis l'historique
-      const approvedPaidFromHistory = historyData
-        .filter((item) => {
-          const st = String(item.status || '').toUpperCase();
-          return st.includes('APPROV') || st.includes('VALID');
-        })
-        .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-
-      const fetchedPaid = Number(
-        rawAccount.paid_amount ?? rawAccount.total_paid ?? rawAccount.paid ?? rawAccount.montant_paye ??
-        rawTuition.paid_amount ?? rawTuition.total_paid ?? rawTuition.paid ?? 0
-      );
-
-      const paidAmount = Math.max(fetchedPaid, approvedPaidFromHistory);
-
-      let remainingAmount = Number(
-        rawAccount.remaining_amount ?? rawAccount.balance ?? rawAccount.solde ?? rawAccount.remaining ??
-        rawTuition.remaining_amount ?? rawTuition.balance ?? 0
-      );
-
-      if (remainingAmount <= 0 && totalAmount > 0) {
-        remainingAmount = Math.max(0, totalAmount - paidAmount);
+      let rawStudent = {};
+      if (studentRes.status === 'fulfilled') {
+        rawStudent = studentRes.value?.data?.data || studentRes.value?.data?.student || studentRes.value?.data || {};
       }
 
-      const accountStatus = rawAccount.status || rawTuition.status || (remainingAmount === 0 && totalAmount > 0 ? 'SOLDE' : 'EN_COURS');
+      const extractNumber = (...values) => {
+        for (const v of values) {
+          if (v !== undefined && v !== null && v !== '') {
+            const num = Number(v);
+            if (!isNaN(num)) return num;
+          }
+        }
+        return null;
+      };
+
+      const sources = [rawAccount, rawTuition, rawStudent, selectedChild];
+
+      let foundTotal = null;
+      for (const src of sources) {
+        if (!src || typeof src !== 'object') continue;
+        const targets = [src, src.account, src.tuition, src.student, src.data, src.financials];
+        for (const t of targets) {
+          if (!t || typeof t !== 'object') continue;
+          const val = extractNumber(
+            t.total_amount,
+            t.total_tuition,
+            t.montant_total,
+            t.tuition_amount,
+            t.total_fee,
+            t.scolarite_total,
+            t.scolarite,
+            t.total,
+            t.amount
+          );
+          if (val !== null && val > 0) {
+            foundTotal = val;
+            break;
+          }
+        }
+        if (foundTotal !== null) break;
+      }
+
+      // Extraction des paiements déjà validés
+      const approvedPaidFromHistory = historyData
+        .filter((item) => {
+          const st = String(item.status || item.etat || '').toUpperCase();
+          return st.includes('APPROV') || st.includes('VALID') || st.includes('SUCCESS') || st === 'PAID';
+        })
+        .reduce((sum, item) => sum + (Number(item.amount || item.montant) || 0), 0);
+
+      let fetchedPaid = 0;
+      for (const src of sources) {
+        if (!src || typeof src !== 'object') continue;
+        const targets = [src, src.account, src.tuition, src.student, src.data, src.financials];
+        for (const t of targets) {
+          if (!t || typeof t !== 'object') continue;
+          const val = extractNumber(
+            t.paid_amount,
+            t.total_paid,
+            t.montant_paye,
+            t.scolarite_payee,
+            t.paid_fee,
+            t.paid,
+            t.paye
+          );
+          if (val !== null && val > fetchedPaid) {
+            fetchedPaid = val;
+          }
+        }
+      }
+      const paidAmount = Math.max(fetchedPaid, approvedPaidFromHistory);
+
+      // Extraction du reste explicite
+      let explicitRemaining = null;
+      for (const src of sources) {
+        if (!src || typeof src !== 'object') continue;
+        const targets = [src, src.account, src.tuition, src.student, src.data, src.financials];
+        for (const t of targets) {
+          if (!t || typeof t !== 'object') continue;
+          const val = extractNumber(
+            t.remaining_amount,
+            t.balance,
+            t.solde,
+            t.remaining,
+            t.montant_restant,
+            t.scolarite_restante,
+            t.restant
+          );
+          if (val !== null && val > 0) {
+            explicitRemaining = val;
+            break;
+          }
+        }
+        if (explicitRemaining !== null) break;
+      }
+
+      let totalAmount = foundTotal || 0;
+      if (totalAmount === 0 && explicitRemaining && explicitRemaining > 0) {
+        totalAmount = paidAmount + explicitRemaining;
+      }
+
+      let remainingAmount = 0;
+      if (totalAmount > 0) {
+        remainingAmount = Math.max(0, totalAmount - paidAmount);
+      } else if (explicitRemaining && explicitRemaining > 0) {
+        remainingAmount = explicitRemaining;
+      }
+
+      // Correction du statut
+      let accountStatus = 'EN_COURS';
+      const rawStatus = String(
+        rawAccount.status || rawTuition.status || rawAccount.etat || rawTuition.etat || ''
+      ).toUpperCase();
+
+      if (totalAmount > 0) {
+        if (remainingAmount <= 0 || paidAmount >= totalAmount || rawStatus.includes('SOLDE')) {
+          accountStatus = 'SOLDE';
+        } else if (paidAmount > 0 || rawStatus.includes('PARTIEL')) {
+          accountStatus = 'PARTIEL';
+        } else {
+          accountStatus = 'EN_COURS';
+        }
+      } else {
+        if (paidAmount > 0) {
+          accountStatus = 'EN_COURS';
+        } else {
+          accountStatus = 'NON_CONFIGURÉ';
+        }
+      }
 
       setAccount({
         total_amount: totalAmount,
@@ -308,23 +406,41 @@ export default function ParentDashboard() {
               <View style={styles.financialRow}>
                 <Text style={styles.financialLabel}>Montant Total :</Text>
                 <Text style={styles.financialValue}>
-                  {(account?.total_amount ?? 0).toLocaleString()} FCFA
+                  {account?.total_amount > 0
+                    ? `${account.total_amount.toLocaleString('fr-FR')} FCFA`
+                    : account?.paid_amount > 0
+                    ? `${account.paid_amount.toLocaleString('fr-FR')} FCFA (En cours)`
+                    : 'Non configuré'}
                 </Text>
               </View>
               <View style={styles.financialRow}>
                 <Text style={styles.financialLabel}>Déjà Validé :</Text>
                 <Text style={[styles.financialValue, { color: '#16a34a' }]}>
-                  {(account?.paid_amount ?? 0).toLocaleString()} FCFA
+                  {(account?.paid_amount ?? 0).toLocaleString('fr-FR')} FCFA
                 </Text>
               </View>
               <View style={[styles.financialRow, styles.financialRowBorder]}>
                 <Text style={styles.financialLabelBold}>Solde Restant :</Text>
                 <Text style={styles.financialValueBold}>
-                  {(account?.remaining_amount ?? 0).toLocaleString()} FCFA
+                  {account?.total_amount > 0 || account?.remaining_amount > 0
+                    ? `${(account?.remaining_amount ?? 0).toLocaleString('fr-FR')} FCFA`
+                    : account?.paid_amount > 0
+                    ? '0 FCFA'
+                    : 'Non configuré'}
                 </Text>
               </View>
               {account?.status && (
-                <Text style={styles.statusBadge}>Statut Général : {account.status}</Text>
+                <Text style={styles.statusBadge}>
+                  Statut Général : {
+                    account.status === 'SOLDE'
+                      ? 'SOLDE'
+                      : account.status === 'PARTIEL'
+                      ? 'EN COURS (Paiement Partiel)'
+                      : account.status === 'NON_CONFIGURÉ'
+                      ? 'SCOLARITÉ NON CONFIGURÉE'
+                      : 'EN COURS'
+                  }
+                </Text>
               )}
             </View>
           )}

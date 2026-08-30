@@ -16,32 +16,70 @@ import {
   setStudentTuition,
   updateStudentTuition,
   getParent,
+  getClasses,
 } from '../services/api';
 
 export default function AdminStudentDetailScreen({ studentId, onBack }) {
   const [student, setStudent] = useState(null);
   const [tuition, setTuition] = useState(null);
   const [parent, setParent] = useState(null);
+  const [classList, setClassList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showTuitionModal, setShowTuitionModal] = useState(false);
   const [tuitionAmount, setTuitionAmount] = useState('');
   const [isSetting, setIsSetting] = useState(false);
 
+  const resolveClassName = (st) => {
+    if (!st) return 'N/A';
+    if (typeof st.class_name === 'string' && st.class_name.trim()) return st.class_name;
+    if (typeof st.class === 'string' && st.class.trim()) return st.class;
+    if (typeof st.classe === 'string' && st.classe.trim()) return st.classe;
+    if (typeof st.classroom === 'string' && st.classroom.trim()) return st.classroom;
+
+    if (typeof st.class === 'object' && st.class !== null) {
+      if (st.class.name) return st.class.name;
+      if (st.class.class_name) return st.class.class_name;
+      if (st.class.label) return st.class.label;
+    }
+    if (typeof st.class_info === 'object' && st.class_info !== null) {
+      if (st.class_info.name) return st.class_info.name;
+      if (st.class_info.class_name) return st.class_info.class_name;
+      if (st.class_info.label) return st.class_info.label;
+    }
+
+    const classId = st.class_id || st.classId || st.class_info?.id || st.class?.id;
+    if (classId !== undefined && classId !== null) {
+      const match = classList.find((c) => String(c.id) === String(classId));
+      if (match) {
+        return match.name || match.class_name || match.label || `Classe ${match.id}`;
+      }
+    }
+
+    return 'N/A';
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      // Charger les données de l'élève
-      const studentData = await getStudent(studentId);
-      setStudent(studentData);
+      const [studentData, tuitionData, classesData] = await Promise.all([
+        getStudent(studentId),
+        getStudentTuition(studentId).catch(() => null),
+        getClasses().catch(() => []),
+      ]);
 
-      // Charger la scolarité
-      const tuitionData = await getStudentTuition(studentId);
+      setStudent(studentData);
       setTuition(tuitionData);
 
+      const list = Array.isArray(classesData)
+        ? classesData
+        : (classesData?.data || classesData?.classes || classesData?.items || []);
+      setClassList(list);
+
       // Charger les données du parent
-      if (studentData.user_id) {
+      const parentId = studentData.user_id || studentData.parent_id;
+      if (parentId) {
         try {
-          const parentData = await getParent(studentData.user_id);
+          const parentData = await getParent(parentId);
           setParent(parentData);
         } catch (err) {
           console.warn('Parent introuvable');
@@ -144,7 +182,7 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Classe:</Text>
-              <Text style={styles.infoValue}>{student.class_name || 'N/A'}</Text>
+              <Text style={styles.infoValue}>{resolveClassName(student)}</Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Parent:</Text>

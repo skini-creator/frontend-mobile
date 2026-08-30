@@ -186,9 +186,50 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     }
   };
 
-  const getParentName = (userId) => {
-    const parent = parents.find((p) => p.id === userId);
-    return parent ? `${parent.first_name} ${parent.last_name}` : 'N/A';
+  const resolveClassName = (st) => {
+    if (!st) return 'N/A';
+    if (typeof st.class_name === 'string' && st.class_name.trim()) return st.class_name;
+    if (typeof st.class === 'string' && st.class.trim()) return st.class;
+    if (typeof st.classe === 'string' && st.classe.trim()) return st.classe;
+    if (typeof st.classroom === 'string' && st.classroom.trim()) return st.classroom;
+
+    if (typeof st.class === 'object' && st.class !== null) {
+      if (st.class.name) return st.class.name;
+      if (st.class.class_name) return st.class.class_name;
+      if (st.class.label) return st.class.label;
+    }
+    if (typeof st.class_info === 'object' && st.class_info !== null) {
+      if (st.class_info.name) return st.class_info.name;
+      if (st.class_info.class_name) return st.class_info.class_name;
+      if (st.class_info.label) return st.class_info.label;
+    }
+
+    const classId = st.class_id || st.classId || st.class_info?.id || st.class?.id;
+    if (classId !== undefined && classId !== null) {
+      const match = classList.find((c) => String(c.id) === String(classId));
+      if (match) {
+        return match.name || match.class_name || match.label || `Classe ${match.id}`;
+      }
+    }
+
+    return 'N/A';
+  };
+
+  const getParentName = (st) => {
+    if (!st) return 'N/A';
+    if (st.parent_name) return st.parent_name;
+    if (typeof st.parent === 'string' && st.parent.trim()) return st.parent;
+    if (typeof st.parent === 'object' && st.parent !== null) {
+      if (st.parent.first_name || st.parent.last_name) {
+        return `${st.parent.first_name || ''} ${st.parent.last_name || ''}`.trim();
+      }
+      if (st.parent.full_name) return st.parent.full_name;
+      if (st.parent.name) return st.parent.name;
+    }
+
+    const userId = st.user_id || st.parent_id || st.parentId;
+    const parent = parents.find((p) => String(p.id) === String(userId) || String(p.user_id) === String(userId));
+    return parent ? `${parent.first_name || ''} ${parent.last_name || ''}`.trim() : 'N/A';
   };
 
   return (
@@ -231,9 +272,9 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                   {student.first_name} {student.last_name}
                 </Text>
                 <Text style={styles.cardText}>Matricule: {student.matricule || 'N/A'}</Text>
-                <Text style={styles.cardText}>Classe: {student.class_name || 'N/A'}</Text>
+                <Text style={styles.cardText}>Classe: {resolveClassName(student)}</Text>
                 <Text style={styles.cardText}>
-                  Parent: {getParentName(student.user_id)}
+                  Parent: {getParentName(student)}
                 </Text>
                 <View style={styles.statusBadge}>
                   <Text

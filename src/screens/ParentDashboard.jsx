@@ -42,19 +42,24 @@ export default function ParentDashboard() {
   // Helper pour résoudre la classe de l'élève
   const resolveClassName = (student) => {
     if (!student) return 'N/A';
-    if (student.class_name) return student.class_name;
-    if (typeof student.class === 'string' && student.class.trim()) return student.class;
+    if (typeof student.class_name === 'string' && student.class_name.trim() && student.class_name !== 'N/A') return student.class_name;
+    if (typeof student.class === 'string' && student.class.trim() && student.class !== 'N/A') return student.class;
+    if (typeof student.classe === 'string' && student.classe.trim() && student.classe !== 'N/A') return student.classe;
+    if (typeof student.classroom === 'string' && student.classroom.trim() && student.classroom !== 'N/A') return student.classroom;
+
     if (typeof student.class === 'object' && student.class !== null) {
       if (student.class.name) return student.class.name;
+      if (student.class.class_name) return student.class.class_name;
       if (student.class.label) return student.class.label;
     }
     if (student.class_info?.name) return student.class_info.name;
-    if (student.classe) return student.classe;
-    if (student.classroom) return student.classroom;
 
     const classId = student.class_id || student.classId;
     if (classId && classesMap[String(classId)]) {
       return classesMap[String(classId)];
+    }
+    if (typeof classId === 'string' && classId.trim() && isNaN(Number(classId))) {
+      return classId;
     }
 
     return 'N/A';

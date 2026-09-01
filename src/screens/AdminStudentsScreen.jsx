@@ -92,7 +92,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
       setFirstName(student.first_name || '');
       setLastName(student.last_name || '');
       setParentId(student.user_id?.toString() || student.parent_id?.toString() || '');
-      setClassId(student.class_id?.toString() || student.class_name || student.class?.toString() || '');
+      const currentClass = student.class_id?.toString() || student.class_name || student.classe || student.class?.toString() || '';
+      setClassId(currentClass);
     } else {
       setEditingId(null);
       setFirstName('');
@@ -132,16 +133,11 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     const basePayload = {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
+      class_name: classNameStr,
+      classe: classNameStr,
+      classroom: classNameStr,
+      class_id: numericClassId || classId,
     };
-
-    if (numericClassId && !isNaN(numericClassId)) {
-      basePayload.class_id = numericClassId;
-    }
-    if (classNameStr) {
-      basePayload.class_name = classNameStr;
-      basePayload.classe = classNameStr;
-      basePayload.classroom = classNameStr;
-    }
 
     if (editingId) {
       try {
@@ -188,10 +184,10 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
 
   const resolveClassName = (st) => {
     if (!st) return 'N/A';
-    if (typeof st.class_name === 'string' && st.class_name.trim()) return st.class_name;
-    if (typeof st.class === 'string' && st.class.trim()) return st.class;
-    if (typeof st.classe === 'string' && st.classe.trim()) return st.classe;
-    if (typeof st.classroom === 'string' && st.classroom.trim()) return st.classroom;
+    if (typeof st.class_name === 'string' && st.class_name.trim() && st.class_name !== 'N/A') return st.class_name;
+    if (typeof st.class === 'string' && st.class.trim() && st.class !== 'N/A') return st.class;
+    if (typeof st.classe === 'string' && st.classe.trim() && st.classe !== 'N/A') return st.classe;
+    if (typeof st.classroom === 'string' && st.classroom.trim() && st.classroom !== 'N/A') return st.classroom;
 
     if (typeof st.class === 'object' && st.class !== null) {
       if (st.class.name) return st.class.name;
@@ -209,6 +205,9 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
       const match = classList.find((c) => String(c.id) === String(classId));
       if (match) {
         return match.name || match.class_name || match.label || `Classe ${match.id}`;
+      }
+      if (typeof classId === 'string' && classId.trim() && isNaN(Number(classId))) {
+        return classId;
       }
     }
 

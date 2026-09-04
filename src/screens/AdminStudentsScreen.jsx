@@ -17,7 +17,7 @@ import {
   getStudents,
   createStudent,
   updateStudent,
-  toggleStudentStatus,
+  deleteStudent,
   getParents,
   getClasses,
   getStudentTuition,
@@ -171,15 +171,28 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     }
   };
 
-  const handleToggleStatus = async (student) => {
-    try {
-      await toggleStudentStatus(student.id);
-      Alert.alert('Succès', `Élève ${student.is_active ? 'désactivé' : 'réactivé'}.`);
-      await loadStudents();
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de modifier le statut.');
-    }
+  const handleDeleteStudent = (student) => {
+    Alert.alert(
+      'Confirmer la suppression',
+      `Voulez-vous vraiment supprimer définitivement l'élève ${student.first_name} ${student.last_name} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteStudent(student.id);
+              Alert.alert('Succès', 'Élève supprimé avec succès.');
+              await loadStudents();
+            } catch (error) {
+              console.error('Erreur:', error);
+              Alert.alert('Erreur', "Impossible de supprimer l'élève.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const resolveClassName = (st) => {
@@ -301,15 +314,10 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[
-                    styles.statusButton,
-                    student.is_active ? styles.disableButton : styles.enableButton,
-                  ]}
-                  onPress={() => handleToggleStatus(student)}
+                  style={[styles.statusButton, styles.deleteButton]}
+                  onPress={() => handleDeleteStudent(student)}
                 >
-                  <Text style={styles.statusButtonText}>
-                    {student.is_active ? 'Désactiver' : 'Réactiver'}
-                  </Text>
+                  <Text style={styles.deleteButtonText}>Supprimer</Text>
                 </Pressable>
               </View>
             </View>
@@ -647,5 +655,13 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

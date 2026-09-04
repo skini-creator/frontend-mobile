@@ -115,7 +115,7 @@ export const fetchPaymentStats = async () => {
  * Récupère la liste de tous les paiements (Réservé Admin & Comptable)
  */
 export const fetchAllPayments = async () => {
-  const response = await api.get('/api/payments');
+  const response = await api.get('/api/payments/');
   let data = response.data;
   
   console.log('[API] fetchAllPayments - response.data brut:', data);
@@ -135,7 +135,7 @@ export const fetchAllPayments = async () => {
  * Soumettre un nouveau versement (Statut PENDING par défaut)
  */
 export const createPayment = async (paymentData) => {
-  const response = await api.post('/api/payments', paymentData);
+  const response = await api.post('/api/payments/', paymentData);
   return response.data;
 };
 
@@ -293,7 +293,7 @@ export const getClasses = async () => {
 
 export const createStudent = async (studentData) => {
   try {
-    const response = await api.post('/api/students', studentData);
+    const response = await api.post('/api/students/', studentData);
     return response.data;
   } catch (err) {
     if (err?.response?.status === 307 || err?.response?.status === 404 || err?.response?.status === 405) {
@@ -305,7 +305,7 @@ export const createStudent = async (studentData) => {
 };
 
 export const getStudents = async () => {
-  const response = await api.get('/api/students');
+  const response = await api.get('/api/students/');
   let data = response.data;
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     data = data.data || data.students || data.items || [];
@@ -326,6 +326,16 @@ export const updateStudent = async (studentId, studentData) => {
 export const toggleStudentStatus = async (studentId) => {
   const response = await api.patch(`/api/students/${studentId}/status`);
   return response.data;
+};
+
+export const deleteStudent = async (studentId) => {
+  try {
+    const response = await api.delete(`/api/students/${studentId}`);
+    return response.data;
+  } catch (err) {
+    const fallback = await api.delete(`/api/admin/students/${studentId}`);
+    return fallback.data;
+  }
 };
 
 export const getStudentTuition = async (studentId) => {
@@ -372,6 +382,16 @@ export const toggleAccountantStatus = async (accountantId) => {
   return response.data;
 };
 
+export const deleteAccountant = async (accountantId) => {
+  try {
+    const response = await api.delete(`/api/users/accountants/${accountantId}`);
+    return response.data;
+  } catch (err) {
+    const fallback = await api.delete(`/api/admin/accountants/${accountantId}`);
+    return fallback.data;
+  }
+};
+
 // ==========================================
 // GESTION DES PARENTS
 // ==========================================
@@ -403,6 +423,16 @@ export const updateParent = async (parentId, parentData) => {
 export const toggleParentStatus = async (parentId) => {
   const response = await api.patch(`/api/users/parents/${parentId}/status`);
   return response.data;
+};
+
+export const deleteParent = async (parentId) => {
+  try {
+    const response = await api.delete(`/api/users/parents/${parentId}`);
+    return response.data;
+  } catch (err) {
+    const fallback = await api.delete(`/api/admin/parents/${parentId}`);
+    return fallback.data;
+  }
 };
 
 export const getParentChildrenCount = async (parentId) => {

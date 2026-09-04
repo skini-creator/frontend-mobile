@@ -12,7 +12,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { getParents, createParent, updateParent, toggleParentStatus, getParentChildrenCount } from '../services/api';
+import { getParents, createParent, updateParent, deleteParent, getParentChildrenCount } from '../services/api';
 
 export default function AdminParentsScreen({ onBack }) {
   const { user } = useContext(AuthContext);
@@ -135,15 +135,28 @@ export default function AdminParentsScreen({ onBack }) {
     }
   };
 
-  const handleToggleStatus = async (parent) => {
-    try {
-      await toggleParentStatus(parent.id);
-      Alert.alert('Succès', `Parent ${parent.is_active ? 'désactivé' : 'réactivé'}.`);
-      await loadParents();
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de modifier le statut.');
-    }
+  const handleDeleteParent = (parent) => {
+    Alert.alert(
+      'Confirmer la suppression',
+      `Voulez-vous vraiment supprimer le parent ${parent.first_name} ${parent.last_name} et tous ses enfants associés ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteParent(parent.id);
+              Alert.alert('Succès', 'Parent et ses enfants supprimés avec succès.');
+              await loadParents();
+            } catch (error) {
+              console.error('Erreur:', error);
+              Alert.alert('Erreur', 'Impossible de supprimer le parent.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -207,15 +220,10 @@ export default function AdminParentsScreen({ onBack }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[
-                    styles.statusButton,
-                    parent.is_active ? styles.disableButton : styles.enableButton,
-                  ]}
-                  onPress={() => handleToggleStatus(parent)}
+                  style={[styles.statusButton, styles.deleteButton]}
+                  onPress={() => handleDeleteParent(parent)}
                 >
-                  <Text style={styles.statusButtonText}>
-                    {parent.is_active ? 'Désactiver' : 'Réactiver'}
-                  </Text>
+                  <Text style={styles.deleteButtonText}>Supprimer</Text>
                 </Pressable>
               </View>
             </View>
@@ -483,5 +491,13 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

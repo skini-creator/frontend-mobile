@@ -12,7 +12,33 @@ import {
   RefreshControl,
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { getAccountants, createAccountant, updateAccountant, toggleAccountantStatus } from '../services/api';
+import { getAccountants, createAccountant, updateAccountant, deleteAccountant } from '../services/api';
+
+// ...
+
+  const handleDeleteAccountant = (accountant) => {
+    Alert.alert(
+      'Confirmer la suppression',
+      `Voulez-vous vraiment supprimer définitivement le comptable ${accountant.first_name} ${accountant.last_name} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccountant(accountant.id);
+              Alert.alert('Succès', 'Comptable supprimé avec succès.');
+              await loadAccountants();
+            } catch (error) {
+              console.error('Erreur:', error);
+              Alert.alert('Erreur', 'Impossible de supprimer le comptable.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
 export default function AdminAccountantsScreen({ onBack }) {
   const { user } = useContext(AuthContext);
@@ -122,15 +148,8 @@ export default function AdminAccountantsScreen({ onBack }) {
     }
   };
 
-  const handleToggleStatus = async (accountant) => {
-    try {
-      await toggleAccountantStatus(accountant.id);
-      Alert.alert('Succès', `Comptable ${accountant.is_active ? 'désactivé' : 'réactivé'}.`);
-      await loadAccountants();
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de modifier le statut.');
-    }
+  const handleToggleStatus = (accountant) => {
+    handleDeleteAccountant(accountant);
   };
 
   return (
@@ -191,15 +210,10 @@ export default function AdminAccountantsScreen({ onBack }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[
-                    styles.statusButton,
-                    accountant.is_active ? styles.disableButton : styles.enableButton,
-                  ]}
-                  onPress={() => handleToggleStatus(accountant)}
+                  style={[styles.statusButton, styles.deleteButton]}
+                  onPress={() => handleDeleteAccountant(accountant)}
                 >
-                  <Text style={styles.statusButtonText}>
-                    {accountant.is_active ? 'Désactiver' : 'Réactiver'}
-                  </Text>
+                  <Text style={styles.deleteButtonText}>Supprimer</Text>
                 </Pressable>
               </View>
             </View>
@@ -467,5 +481,13 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+  },
+  deleteButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

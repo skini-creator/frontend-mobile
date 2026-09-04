@@ -490,7 +490,7 @@ export default function ParentDashboard() {
           onChangeText={setTransactionRef}
         />
 
-        <Pressable style={styles.button} onPress={handlePayment} disabled={saving}>
+        <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handlePayment} disabled={saving}>
           <Text style={styles.buttonText}>{saving ? 'Transmission...' : 'Déclarer le paiement'}</Text>
         </Pressable>
       </View>
@@ -611,6 +611,7 @@ const styles = StyleSheet.create({
   operatorTextSelected: { color: '#ffffff' },
   input: { height: 48, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 10, paddingHorizontal: 14, backgroundColor: '#ffffff', marginBottom: 12 },
   button: { height: 48, borderRadius: 10, backgroundColor: '#2563eb', justifyContent: 'center', alignItems: 'center' },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#ffffff', fontWeight: '600', fontSize: 15 },
   empty: { color: '#64748b', fontSize: 14 },
   historyList: { gap: 10 },

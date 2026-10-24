@@ -41,19 +41,31 @@ const AnimatedButton = ({
     }).start();
   };
 
+  // Sépare les styles de layout (flex, alignSelf…) qui doivent aller sur le
+  // wrapper Animated.View, des styles visuels qui restent sur le Pressable.
+  const flatStyle = Array.isArray(style)
+    ? Object.assign({}, ...style.map((s) => s || {}))
+    : style || {};
+
+  const { flex, flexGrow, flexShrink, flexBasis, alignSelf, ...pressableStyle } = flatStyle;
+  const wrapperLayoutStyle = { flex, flexGrow, flexShrink, flexBasis, alignSelf };
+
   return (
     <Animated.View
-      style={{
-        transform: [{ scale: scaleAnim }],
-        opacity: disabled ? 0.6 : 1,
-      }}
+      style={[
+        wrapperLayoutStyle,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: disabled ? 0.6 : 1,
+        },
+      ]}
     >
       <Pressable
         onPress={disabled ? undefined : onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
-        style={style}
+        style={pressableStyle}
         {...rest}
       >
         {children}

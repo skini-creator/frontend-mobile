@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import {
   getStudent,
   getStudentTuition,
@@ -143,9 +143,9 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={onBack}>
+          <AnimatedButton onPress={onBack}>
             <Text style={styles.backButton}>← Retour</Text>
-          </Pressable>
+          </AnimatedButton>
         </View>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color="#2563eb" />
@@ -162,9 +162,9 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
     <View style={styles.container}>
       {/* En-tête */}
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
+        <AnimatedButton onPress={onBack}>
           <Text style={styles.backButton}>← Retour</Text>
-        </Pressable>
+        </AnimatedButton>
         <Text style={styles.title}>Détail de l'élève</Text>
       </View>
 
@@ -202,14 +202,14 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Situation financière</Text>
-            <Pressable
+            <AnimatedButton
               style={styles.editTuitionButton}
               onPress={handleOpenTuitionModal}
             >
               <Text style={styles.editTuitionButtonText}>
                 {tuition && tuition.total_amount > 0 ? 'Modifier' : 'Définir'}
               </Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
 
           {tuition && tuition.total_amount > 0 ? (
@@ -268,14 +268,14 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
               <Text style={styles.emptyTuitionText}>
                 Aucune scolarité configurée pour cet élève.
               </Text>
-              <Pressable
+              <AnimatedButton
                 style={styles.configureTuitionButton}
                 onPress={handleOpenTuitionModal}
               >
                 <Text style={styles.configureTuitionButtonText}>
                   Configurer la scolarité
                 </Text>
-              </Pressable>
+              </AnimatedButton>
             </View>
           )}
         </View>
@@ -291,9 +291,9 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
                   ? 'Modifier la scolarité'
                   : 'Définir la scolarité'}
               </Text>
-              <Pressable onPress={() => setShowTuitionModal(false)}>
+              <AnimatedButton onPress={() => setShowTuitionModal(false)}>
                 <Text style={styles.closeButton}>✕</Text>
-              </Pressable>
+              </AnimatedButton>
             </View>
 
             <View style={styles.modalForm}>
@@ -306,11 +306,8 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
                 keyboardType="decimal-pad"
               />
 
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  isSetting && styles.saveButtonDisabled,
-                ]}
+              <AnimatedButton
+                style={styles.saveButton}
                 onPress={handleSaveTuition}
                 disabled={isSetting}
               >
@@ -319,7 +316,7 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
                 ) : (
                   <Text style={styles.saveButtonText}>Enregistrer</Text>
                 )}
-              </Pressable>
+              </AnimatedButton>
             </View>
           </View>
         </View>

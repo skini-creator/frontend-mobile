@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -11,6 +10,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import { getAccountants, createAccountant, updateAccountant, deleteAccountant } from '../services/api';
 
@@ -165,21 +165,21 @@ export default function AdminAccountantsScreen({ onBack }) {
     <View style={styles.container}>
       {/* En-tête */}
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
+        <AnimatedButton onPress={onBack}>
           <Text style={styles.backButton}>← Retour</Text>
-        </Pressable>
+        </AnimatedButton>
         <View>
           <Text style={styles.title}>Gestion des Comptables</Text>
         </View>
       </View>
 
       {/* Bouton Ajouter */}
-      <Pressable
+      <AnimatedButton
         style={styles.addButton}
         onPress={() => handleOpenModal()}
       >
         <Text style={styles.addButtonText}>+ Ajouter un comptable</Text>
-      </Pressable>
+      </AnimatedButton>
 
       {/* Liste des comptables */}
       {loading && accountants.length === 0 ? (
@@ -212,17 +212,16 @@ export default function AdminAccountantsScreen({ onBack }) {
               </View>
 
               <View style={styles.cardActions}>
-                <Pressable
+                <AnimatedButton
                   style={styles.editButton}
                   onPress={() => handleOpenModal(accountant)}
                 >
                   <Text style={styles.editButtonText}>Modifier</Text>
-                </Pressable>
-                <Pressable
+                </AnimatedButton>
+                <AnimatedButton
                   style={[
                     styles.statusButton,
                     styles.deleteButton,
-                    deletingId === accountant.id && styles.buttonLoadingDisabled,
                   ]}
                   onPress={() => handleDeleteAccountant(accountant)}
                   disabled={deletingId === accountant.id}
@@ -232,7 +231,7 @@ export default function AdminAccountantsScreen({ onBack }) {
                   ) : (
                     <Text style={styles.deleteButtonText}>Supprimer</Text>
                   )}
-                </Pressable>
+                </AnimatedButton>
               </View>
             </View>
           ))}
@@ -247,9 +246,9 @@ export default function AdminAccountantsScreen({ onBack }) {
               <Text style={styles.modalTitle}>
                 {editingId ? 'Modifier un comptable' : 'Ajouter un comptable'}
               </Text>
-              <Pressable onPress={() => setShowModal(false)}>
+              <AnimatedButton onPress={() => setShowModal(false)}>
                 <Text style={styles.closeButton}>✕</Text>
-              </Pressable>
+              </AnimatedButton>
             </View>
 
             <View style={styles.form}>
@@ -313,11 +312,8 @@ export default function AdminAccountantsScreen({ onBack }) {
                 </>
               )}
 
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  saving && styles.buttonLoadingDisabled,
-                ]}
+              <AnimatedButton
+                style={styles.saveButton}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -328,7 +324,7 @@ export default function AdminAccountantsScreen({ onBack }) {
                     {editingId ? 'Modifier' : 'Créer'}
                   </Text>
                 )}
-              </Pressable>
+              </AnimatedButton>
             </View>
           </ScrollView>
         </View>

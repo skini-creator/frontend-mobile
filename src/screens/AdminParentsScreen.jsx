@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -11,6 +10,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import { getParents, createParent, updateParent, deleteParent, getParentChildrenCount } from '../services/api';
 
@@ -174,21 +174,21 @@ export default function AdminParentsScreen({ onBack }) {
     <View style={styles.container}>
       {/* En-tête */}
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
+        <AnimatedButton onPress={onBack}>
           <Text style={styles.backButton}>← Retour</Text>
-        </Pressable>
+        </AnimatedButton>
         <View>
           <Text style={styles.title}>Gestion des Parents</Text>
         </View>
       </View>
 
       {/* Bouton Ajouter */}
-      <Pressable
+      <AnimatedButton
         style={styles.addButton}
         onPress={() => handleOpenModal()}
       >
         <Text style={styles.addButtonText}>+ Ajouter un parent</Text>
-      </Pressable>
+      </AnimatedButton>
 
       {/* Liste des parents */}
       {loading && parents.length === 0 ? (
@@ -224,17 +224,16 @@ export default function AdminParentsScreen({ onBack }) {
               </View>
 
               <View style={styles.cardActions}>
-                <Pressable
+                <AnimatedButton
                   style={styles.editButton}
                   onPress={() => handleOpenModal(parent)}
                 >
                   <Text style={styles.editButtonText}>Modifier</Text>
-                </Pressable>
-                <Pressable
+                </AnimatedButton>
+                <AnimatedButton
                   style={[
                     styles.statusButton,
                     styles.deleteButton,
-                    deletingId === parent.id && styles.buttonLoadingDisabled,
                   ]}
                   onPress={() => handleDeleteParent(parent)}
                   disabled={deletingId === parent.id}
@@ -244,7 +243,7 @@ export default function AdminParentsScreen({ onBack }) {
                   ) : (
                     <Text style={styles.deleteButtonText}>Supprimer</Text>
                   )}
-                </Pressable>
+                </AnimatedButton>
               </View>
             </View>
           ))}
@@ -259,9 +258,9 @@ export default function AdminParentsScreen({ onBack }) {
               <Text style={styles.modalTitle}>
                 {editingId ? 'Modifier un parent' : 'Ajouter un parent'}
               </Text>
-              <Pressable onPress={() => setShowModal(false)}>
+              <AnimatedButton onPress={() => setShowModal(false)}>
                 <Text style={styles.closeButton}>✕</Text>
-              </Pressable>
+              </AnimatedButton>
             </View>
 
             <View style={styles.form}>
@@ -325,11 +324,8 @@ export default function AdminParentsScreen({ onBack }) {
                 </>
               )}
 
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  saving && styles.buttonLoadingDisabled,
-                ]}
+              <AnimatedButton
+                style={styles.saveButton}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -340,7 +336,7 @@ export default function AdminParentsScreen({ onBack }) {
                     {editingId ? 'Modifier' : 'Créer'}
                   </Text>
                 )}
-              </Pressable>
+              </AnimatedButton>
             </View>
           </ScrollView>
         </View>

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -11,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen() {
@@ -90,8 +90,8 @@ export default function LoginScreen() {
             </View>
 
             {/* Bouton de Soumission */}
-            <Pressable
-              style={[styles.button, loading && styles.buttonDisabled]}
+            <AnimatedButton
+              style={styles.button}
               onPress={handleLogin}
               disabled={loading}
             >
@@ -100,7 +100,7 @@ export default function LoginScreen() {
               ) : (
                 <Text style={styles.buttonText}>Se connecter</Text>
               )}
-            </Pressable>
+            </AnimatedButton>
           </View>
         </View>
       </ScrollView>
@@ -177,6 +177,7 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     backgroundColor: '#93c5fd',
+    opacity: 0.6,
   },
   buttonText: {
     color: '#ffffff',

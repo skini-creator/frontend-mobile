@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState, useMemo, useCallback, useRef } 
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -11,6 +10,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import { fetchAllPayments, validatePayment, rejectPayment } from '../services/api';
 
@@ -215,7 +215,7 @@ export default function ComptableDashboard() {
           </Text>
           <Text style={styles.subtitle}>Validation des paiements et suivi financier</Text>
         </View>
-        <Pressable
+        <AnimatedButton
           style={styles.logoutButton}
           onPress={async () => {
             try {
@@ -226,7 +226,7 @@ export default function ComptableDashboard() {
           }}
         >
           <Text style={styles.logoutText}>Déconnexion</Text>
-        </Pressable>
+        </AnimatedButton>
       </View>
 
       {/* Bannière d'erreur */}
@@ -235,9 +235,9 @@ export default function ComptableDashboard() {
           <Text style={styles.errorBannerText}>
             ⚠️ Erreur de synchronisation : {lastFetchError}
           </Text>
-          <Pressable style={styles.retryBtn} onPress={() => fetchComptableData(true)}>
+          <AnimatedButton style={styles.retryBtn} onPress={() => fetchComptableData(true)}>
             <Text style={styles.retryBtnText}>Réessayer</Text>
-          </Pressable>
+          </AnimatedButton>
         </View>
       )}
 
@@ -295,7 +295,7 @@ export default function ComptableDashboard() {
             const badgeConfig = getBadgeStyle(item.status);
 
             return (
-              <Pressable
+              <AnimatedButton
                 key={item.id}
                 style={styles.card}
                 onPress={() => {
@@ -323,7 +323,7 @@ export default function ComptableDashboard() {
                     <Text style={styles.operatorText}>{item.operator || 'Mobile Money'}</Text>
                   </View>
                 </View>
-              </Pressable>
+              </AnimatedButton>
             );
           })}
         </View>
@@ -393,36 +393,36 @@ export default function ComptableDashboard() {
                       <ActivityIndicator size="small" color="#2563eb" />
                     ) : isRejecting ? (
                       <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
+                        <AnimatedButton
+                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1 }]}
                           onPress={handleConfirmReject}
                           disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Confirmer le Rejet</Text>
-                        </Pressable>
-                        <Pressable
+                        </AnimatedButton>
+                        <AnimatedButton
                           style={[styles.actionBtn, { backgroundColor: '#94a3b8', flex: 1 }]}
                           onPress={() => setIsRejecting(false)}
                         >
                           <Text style={styles.actionBtnText}>Annuler</Text>
-                        </Pressable>
+                        </AnimatedButton>
                       </View>
                     ) : (
                       <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#16a34a', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
+                        <AnimatedButton
+                          style={[styles.actionBtn, { backgroundColor: '#16a34a', flex: 1 }]}
                           onPress={() => handleValidate(selectedPayment)}
                           disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Valider</Text>
-                        </Pressable>
-                        <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
+                        </AnimatedButton>
+                        <AnimatedButton
+                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1 }]}
                           onPress={() => setIsRejecting(true)}
                           disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Rejeter</Text>
-                        </Pressable>
+                        </AnimatedButton>
                       </View>
                     )}
                   </View>
@@ -430,7 +430,7 @@ export default function ComptableDashboard() {
               </View>
             )}
 
-            <Pressable
+            <AnimatedButton
               style={styles.closeButton}
               onPress={() => {
                 setSelectedPayment(null);
@@ -438,7 +438,7 @@ export default function ComptableDashboard() {
               }}
             >
               <Text style={styles.closeButtonText}>Fermer</Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
         </View>
       </Modal>

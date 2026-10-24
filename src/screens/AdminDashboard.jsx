@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -10,6 +9,7 @@ import {
   Modal,
   RefreshControl,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import { fetchAllPayments } from '../services/api';
 import AdminAccountantsScreen from './AdminAccountantsScreen';
@@ -169,14 +169,14 @@ export default function AdminDashboard() {
                   : 'Gestion des élèves'}
               </Text>
             </View>
-            <Pressable style={styles.logoutButton} onPress={logout}>
+            <AnimatedButton style={styles.logoutButton} onPress={logout}>
               <Text style={styles.logoutText}>Déconnexion</Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
 
           {/* Onglets de navigation */}
           <View style={styles.tabContainer}>
-            <Pressable
+            <AnimatedButton
               style={[styles.tab, activeTab === 'payments' && styles.tabActive]}
               onPress={() => setActiveTab('payments')}
             >
@@ -188,8 +188,8 @@ export default function AdminDashboard() {
               >
                 Paiements
               </Text>
-            </Pressable>
-            <Pressable
+            </AnimatedButton>
+            <AnimatedButton
               style={[styles.tab, activeTab === 'accountants' && styles.tabActive]}
               onPress={() => setActiveTab('accountants')}
             >
@@ -201,8 +201,8 @@ export default function AdminDashboard() {
               >
                 Comptables
               </Text>
-            </Pressable>
-            <Pressable
+            </AnimatedButton>
+            <AnimatedButton
               style={[styles.tab, activeTab === 'parents' && styles.tabActive]}
               onPress={() => setActiveTab('parents')}
             >
@@ -214,8 +214,8 @@ export default function AdminDashboard() {
               >
                 Parents
               </Text>
-            </Pressable>
-            <Pressable
+            </AnimatedButton>
+            <AnimatedButton
               style={[styles.tab, activeTab === 'students' && styles.tabActive]}
               onPress={() => setActiveTab('students')}
             >
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
               >
                 Élèves
               </Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
 
           {/* Contenu par onglet */}
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
               const badgeConfig = getBadgeStyle(item.status);
 
               return (
-              <Pressable
+              <AnimatedButton
                 key={item.id}
                 style={styles.card}
                 onPress={() => setSelectedPayment(item)}
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                     <Text style={styles.operatorText}>{item.operator || 'AIRTEL_MONEY'}</Text>
                   </View>
                 </View>
-              </Pressable>
+              </AnimatedButton>
             );
           })}
         </View>
@@ -407,9 +407,9 @@ export default function AdminDashboard() {
                 </View>
               </View>
             )}
-            <Pressable style={styles.closeButton} onPress={() => setSelectedPayment(null)}>
+            <AnimatedButton style={styles.closeButton} onPress={() => setSelectedPayment(null)}>
               <Text style={styles.closeButtonText}>Fermer</Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
         </View>
       </Modal>

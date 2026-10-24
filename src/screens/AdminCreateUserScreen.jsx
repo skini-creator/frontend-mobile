@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { useAuth } from '../context/AuthContext';
 import { createUser } from '../services/api';
 
@@ -84,22 +85,22 @@ export default function AdminCreateUserScreen() {
 
         <Text style={styles.label}>Rôle</Text>
         <View style={styles.roleToggleRow}>
-          <Pressable
+          <AnimatedButton
             style={[styles.roleToggle, role === 'PARENT' ? styles.roleActive : null]}
             onPress={() => setRole('PARENT')}
           >
             <Text style={role === 'PARENT' ? styles.roleTextActive : styles.roleText}>Parent</Text>
-          </Pressable>
-          <Pressable
+          </AnimatedButton>
+          <AnimatedButton
             style={[styles.roleToggle, role === 'COMPTABLE' ? styles.roleActive : null]}
             onPress={() => setRole('COMPTABLE')}
           >
             <Text style={role === 'COMPTABLE' ? styles.roleTextActive : styles.roleText}>Comptable</Text>
-          </Pressable>
+          </AnimatedButton>
         </View>
 
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
+        <AnimatedButton
+          style={styles.button}
           onPress={handleCreateUser}
           disabled={loading}
         >
@@ -108,11 +109,11 @@ export default function AdminCreateUserScreen() {
           ) : (
             <Text style={styles.buttonText}>Créer utilisateur</Text>
           )}
-        </Pressable>
+        </AnimatedButton>
 
-        <Pressable style={styles.logout} onPress={logout}>
+        <AnimatedButton style={styles.logout} onPress={logout}>
           <Text style={styles.logoutText}>Déconnexion</Text>
-        </Pressable>
+        </AnimatedButton>
       </View>
     </View>
   );

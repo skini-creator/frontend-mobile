@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  Pressable,
   StyleSheet,
   ScrollView,
   Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import api, { createPayment, getClasses } from '../services/api';
 
@@ -358,9 +358,9 @@ export default function ParentDashboard() {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>Portail Scolaire Parent</Text>
         </View>
-        <Pressable style={styles.logoutButton} onPress={logout}>
+        <AnimatedButton style={styles.logoutButton} onPress={logout}>
           <Text style={styles.logoutText}>Déconnexion</Text>
-        </Pressable>
+        </AnimatedButton>
       </View>
 
       {/* 2 & 3. Choix de l'enfant */}
@@ -381,7 +381,7 @@ export default function ParentDashboard() {
               const className = resolveClassName(student);
 
               return (
-                <Pressable
+                <AnimatedButton
                   key={studentId}
                   style={[styles.childCard, isSelected && styles.childCardSelected]}
                   onPress={() => setSelectedChild(student)}
@@ -393,7 +393,7 @@ export default function ParentDashboard() {
                     Classe : {className}
                     {student.matricule ? ` • Mat : ${student.matricule}` : ''}
                   </Text>
-                </Pressable>
+                </AnimatedButton>
               );
             })}
           </View>
@@ -457,22 +457,22 @@ export default function ParentDashboard() {
         <Text style={styles.sectionTitle}>Déclarer un paiement</Text>
 
         <View style={styles.operatorContainer}>
-          <Pressable
+          <AnimatedButton
             style={[styles.operatorButton, operator === 'AIRTEL_MONEY' && styles.operatorSelected]}
             onPress={() => setOperator('AIRTEL_MONEY')}
           >
             <Text style={[styles.operatorText, operator === 'AIRTEL_MONEY' && styles.operatorTextSelected]}>
               Airtel Money
             </Text>
-          </Pressable>
-          <Pressable
+          </AnimatedButton>
+          <AnimatedButton
             style={[styles.operatorButton, operator === 'MOOV_MONEY' && styles.operatorSelected]}
             onPress={() => setOperator('MOOV_MONEY')}
           >
             <Text style={[styles.operatorText, operator === 'MOOV_MONEY' && styles.operatorTextSelected]}>
               Moov Money
             </Text>
-          </Pressable>
+          </AnimatedButton>
         </View>
 
         <TextInput
@@ -490,8 +490,8 @@ export default function ParentDashboard() {
           onChangeText={setTransactionRef}
         />
 
-        <Pressable
-          style={[styles.button, saving && styles.buttonDisabled]}
+        <AnimatedButton
+          style={styles.button}
           onPress={handlePayment}
           disabled={saving}
         >
@@ -500,7 +500,7 @@ export default function ParentDashboard() {
           ) : (
             <Text style={styles.buttonText}>Déclarer le paiement</Text>
           )}
-        </Pressable>
+        </AnimatedButton>
       </View>
 
       {/* 6. Historique des Paiements */}
@@ -517,7 +517,7 @@ export default function ParentDashboard() {
                 const badgeConfig = getBadgeStyle(item.status);
 
                 return (
-                  <Pressable
+                  <AnimatedButton
                     key={item.id}
                     style={styles.receiptCard}
                     onPress={() => setSelectedPayment(item)}
@@ -538,7 +538,7 @@ export default function ParentDashboard() {
                           : 'N/A'}
                       </Text>
                     </View>
-                  </Pressable>
+                  </AnimatedButton>
                 );
               })}
             </View>
@@ -578,9 +578,9 @@ export default function ParentDashboard() {
                 </Text>
               </View>
             )}
-            <Pressable style={styles.closeButton} onPress={() => setSelectedPayment(null)}>
+            <AnimatedButton style={styles.closeButton} onPress={() => setSelectedPayment(null)}>
               <Text style={styles.closeButtonText}>Fermer</Text>
-            </Pressable>
+            </AnimatedButton>
           </View>
         </View>
       </Modal>

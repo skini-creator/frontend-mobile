@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
   ScrollView,
   TextInput,
@@ -12,6 +11,7 @@ import {
   RefreshControl,
   FlatList,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { AuthContext } from '../context/AuthContext';
 import {
   getStudents,
@@ -258,21 +258,21 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
     <View style={styles.container}>
       {/* En-tête */}
       <View style={styles.header}>
-        <Pressable onPress={onBack}>
+        <AnimatedButton onPress={onBack}>
           <Text style={styles.backButton}>← Retour</Text>
-        </Pressable>
+        </AnimatedButton>
         <View>
           <Text style={styles.title}>Gestion des Élèves</Text>
         </View>
       </View>
 
       {/* Bouton Ajouter */}
-      <Pressable
+      <AnimatedButton
         style={styles.addButton}
         onPress={() => handleOpenModal()}
       >
         <Text style={styles.addButtonText}>+ Ajouter un élève</Text>
-      </Pressable>
+      </AnimatedButton>
 
       {/* Liste des élèves */}
       {loading && students.length === 0 ? (
@@ -286,7 +286,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
         >
           {students.map((student) => (
             <View key={student.id} style={styles.card}>
-              <Pressable
+              <AnimatedButton
                 style={styles.cardContent}
                 onPress={() => onSelectStudent && onSelectStudent(student)}
               >
@@ -308,26 +308,25 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                     {student.is_active ? 'ACTIF' : 'INACTIF'}
                   </Text>
                 </View>
-              </Pressable>
+              </AnimatedButton>
 
               <View style={styles.cardActions}>
-                <Pressable
+                <AnimatedButton
                   style={styles.detailButton}
                   onPress={() => onSelectStudent && onSelectStudent(student)}
                 >
                   <Text style={styles.detailButtonText}>Détails</Text>
-                </Pressable>
-                <Pressable
+                </AnimatedButton>
+                <AnimatedButton
                   style={styles.editButton}
                   onPress={() => handleOpenModal(student)}
                 >
                   <Text style={styles.editButtonText}>Modifier</Text>
-                </Pressable>
-                <Pressable
+                </AnimatedButton>
+                <AnimatedButton
                   style={[
                     styles.statusButton,
                     styles.deleteButton,
-                    deletingId === student.id && styles.buttonLoadingDisabled,
                   ]}
                   onPress={() => handleDeleteStudent(student)}
                   disabled={deletingId === student.id}
@@ -337,7 +336,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                   ) : (
                     <Text style={styles.deleteButtonText}>Supprimer</Text>
                   )}
-                </Pressable>
+                </AnimatedButton>
               </View>
             </View>
           ))}
@@ -352,9 +351,9 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
               <Text style={styles.modalTitle}>
                 {editingId ? 'Modifier un élève' : 'Ajouter un élève'}
               </Text>
-              <Pressable onPress={() => setShowModal(false)}>
+              <AnimatedButton onPress={() => setShowModal(false)}>
                 <Text style={styles.closeButton}>✕</Text>
-              </Pressable>
+              </AnimatedButton>
             </View>
 
             <View style={styles.form}>
@@ -383,7 +382,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                       nestedScrollEnabled={true}
                     >
                       {parents.map((parent) => (
-                        <Pressable
+                        <AnimatedButton
                           key={parent.id}
                           style={[
                             styles.pickerItem,
@@ -399,7 +398,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                           >
                             {parent.first_name} {parent.last_name}
                           </Text>
-                        </Pressable>
+                        </AnimatedButton>
                       ))}
                     </ScrollView>
                   </View>
@@ -417,7 +416,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                         String(classId) === String(cls.id) ||
                         String(classId).toLowerCase() === String(cName).toLowerCase();
                       return (
-                        <Pressable
+                        <AnimatedButton
                           key={cls.id || cName}
                           style={[styles.pickerItem, isSelected && styles.pickerItemSelected]}
                           onPress={() => setClassId(String(cls.id || cName))}
@@ -425,14 +424,14 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                           <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
                             {cName}
                           </Text>
-                        </Pressable>
+                        </AnimatedButton>
                       );
                     })
                   ) : (
                     ['6ème A', '6ème B', '5ème A', '4ème A', '3ème A', '2nde C', '1ère D', 'Terminale C', 'Terminale D'].map((name, idx) => {
                       const isSelected = String(classId).toLowerCase() === String(name).toLowerCase();
                       return (
-                        <Pressable
+                        <AnimatedButton
                           key={idx}
                           style={[styles.pickerItem, isSelected && styles.pickerItemSelected]}
                           onPress={() => setClassId(name)}
@@ -440,18 +439,15 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                           <Text style={[styles.pickerItemText, isSelected && styles.pickerItemTextSelected]}>
                             {name}
                           </Text>
-                        </Pressable>
+                        </AnimatedButton>
                       );
                     })
                   )}
                 </ScrollView>
               </View>
 
-              <Pressable
-                style={[
-                  styles.saveButton,
-                  saving && styles.buttonLoadingDisabled,
-                ]}
+              <AnimatedButton
+                style={styles.saveButton}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -462,7 +458,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                     {editingId ? 'Modifier' : 'Créer'}
                   </Text>
                 )}
-              </Pressable>
+              </AnimatedButton>
             </View>
           </ScrollView>
         </View>

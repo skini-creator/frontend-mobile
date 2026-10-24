@@ -28,6 +28,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
   const [students, setStudents] = useState([]);
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -139,6 +141,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
       class_id: numericClassId || classId,
     };
 
+    setSaving(true);
     if (editingId) {
       try {
         await updateStudent(editingId, basePayload);
@@ -147,9 +150,11 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
         await loadStudents();
       } catch (error) {
         console.error('Erreur modification élève:', error);
-        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de modifier l\'élève.';
+        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de modifier l\'\u00e9lève.';
         const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
         Alert.alert('Erreur', msg);
+      } finally {
+        setSaving(false);
       }
     } else {
       try {
@@ -164,9 +169,11 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
         await loadStudents();
       } catch (error) {
         console.error('Erreur création élève:', error);
-        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de créer l\'élève.';
+        const detail = error?.response?.data?.detail || error?.response?.data?.message || 'Impossible de créer l\'\u00e9lève.';
         const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
         Alert.alert('Erreur', msg);
+      } finally {
+        setSaving(false);
       }
     }
   };
@@ -181,6 +188,7 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
+            setDeletingId(student.id);
             try {
               await deleteStudent(student.id);
               Alert.alert('Succès', 'Élève supprimé avec succès.');
@@ -188,6 +196,8 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
             } catch (error) {
               console.error('Erreur:', error);
               Alert.alert('Erreur', "Impossible de supprimer l'élève.");
+            } finally {
+              setDeletingId(null);
             }
           },
         },
@@ -314,10 +324,19 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.statusButton, styles.deleteButton]}
+                  style={[
+                    styles.statusButton,
+                    styles.deleteButton,
+                    deletingId === student.id && styles.buttonLoadingDisabled,
+                  ]}
                   onPress={() => handleDeleteStudent(student)}
+                  disabled={deletingId === student.id}
                 >
-                  <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  {deletingId === student.id ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -428,10 +447,21 @@ export default function AdminStudentsScreen({ onBack, onSelectStudent }) {
                 </ScrollView>
               </View>
 
-              <Pressable style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>
-                  {editingId ? 'Modifier' : 'Créer'}
-                </Text>
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  saving && styles.buttonLoadingDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>
+                    {editingId ? 'Modifier' : 'Créer'}
+                  </Text>
+                )}
               </Pressable>
             </View>
           </ScrollView>
@@ -655,6 +685,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  buttonLoadingDisabled: {
+    opacity: 0.6,
   },
   deleteButton: {
     backgroundColor: '#ef4444',

@@ -14,39 +14,15 @@ import {
 import { AuthContext } from '../context/AuthContext';
 import { getAccountants, createAccountant, updateAccountant, deleteAccountant } from '../services/api';
 
-// ...
-
-  const handleDeleteAccountant = (accountant) => {
-    Alert.alert(
-      'Confirmer la suppression',
-      `Voulez-vous vraiment supprimer définitivement le comptable ${accountant.first_name} ${accountant.last_name} ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAccountant(accountant.id);
-              Alert.alert('Succès', 'Comptable supprimé avec succès.');
-              await loadAccountants();
-            } catch (error) {
-              console.error('Erreur:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer le comptable.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
 export default function AdminAccountantsScreen({ onBack }) {
   const { user } = useContext(AuthContext);
   const [accountants, setAccountants] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Champs du formulaire
   const [firstName, setFirstName] = useState('');
@@ -103,6 +79,7 @@ export default function AdminAccountantsScreen({ onBack }) {
       return;
     }
 
+    setSaving(true);
     if (editingId) {
       // Modification
       try {
@@ -120,11 +97,14 @@ export default function AdminAccountantsScreen({ onBack }) {
       } catch (error) {
         console.error('Erreur:', error);
         Alert.alert('Erreur', 'Impossible de modifier le comptable.');
+      } finally {
+        setSaving(false);
       }
     } else {
       // Création
       if (!password.trim()) {
         Alert.alert('Erreur', 'Le mot de passe est obligatoire.');
+        setSaving(false);
         return;
       }
       try {
@@ -144,8 +124,37 @@ export default function AdminAccountantsScreen({ onBack }) {
         console.error('Erreur:', error);
         const message = error?.response?.data?.detail || 'Impossible de créer le comptable.';
         Alert.alert('Erreur', message);
+      } finally {
+        setSaving(false);
       }
     }
+  };
+
+  const handleDeleteAccountant = (accountant) => {
+    Alert.alert(
+      'Confirmer la suppression',
+      `Voulez-vous vraiment supprimer définitivement le comptable ${accountant.first_name} ${accountant.last_name} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingId(accountant.id);
+            try {
+              await deleteAccountant(accountant.id);
+              Alert.alert('Succès', 'Comptable supprimé avec succès.');
+              await loadAccountants();
+            } catch (error) {
+              console.error('Erreur:', error);
+              Alert.alert('Erreur', 'Impossible de supprimer le comptable.');
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleToggleStatus = (accountant) => {
@@ -210,10 +219,19 @@ export default function AdminAccountantsScreen({ onBack }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.statusButton, styles.deleteButton]}
+                  style={[
+                    styles.statusButton,
+                    styles.deleteButton,
+                    deletingId === accountant.id && styles.buttonLoadingDisabled,
+                  ]}
                   onPress={() => handleDeleteAccountant(accountant)}
+                  disabled={deletingId === accountant.id}
                 >
-                  <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  {deletingId === accountant.id ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -295,10 +313,21 @@ export default function AdminAccountantsScreen({ onBack }) {
                 </>
               )}
 
-              <Pressable style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>
-                  {editingId ? 'Modifier' : 'Créer'}
-                </Text>
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  saving && styles.buttonLoadingDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>
+                    {editingId ? 'Modifier' : 'Créer'}
+                  </Text>
+                )}
               </Pressable>
             </View>
           </ScrollView>
@@ -481,6 +510,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  buttonLoadingDisabled: {
+    opacity: 0.6,
   },
   deleteButton: {
     backgroundColor: '#ef4444',

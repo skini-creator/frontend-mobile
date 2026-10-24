@@ -307,13 +307,18 @@ export default function AdminStudentDetailScreen({ studentId, onBack }) {
               />
 
               <Pressable
-                style={styles.saveButton}
+                style={[
+                  styles.saveButton,
+                  isSetting && styles.saveButtonDisabled,
+                ]}
                 onPress={handleSaveTuition}
                 disabled={isSetting}
               >
-                <Text style={styles.saveButtonText}>
-                  {isSetting ? 'Enregistrement...' : 'Enregistrer'}
-                </Text>
+                {isSetting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Enregistrer</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -550,6 +555,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563eb',
     borderRadius: 6,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveButtonText: {
     color: '#fff',

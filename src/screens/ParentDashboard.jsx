@@ -490,8 +490,16 @@ export default function ParentDashboard() {
           onChangeText={setTransactionRef}
         />
 
-        <Pressable style={[styles.button, saving && styles.buttonDisabled]} onPress={handlePayment} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? 'Transmission...' : 'Déclarer le paiement'}</Text>
+        <Pressable
+          style={[styles.button, saving && styles.buttonDisabled]}
+          onPress={handlePayment}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>Déclarer le paiement</Text>
+          )}
         </Pressable>
       </View>
 

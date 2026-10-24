@@ -18,6 +18,8 @@ export default function AdminParentsScreen({ onBack }) {
   const { user } = useContext(AuthContext);
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -90,6 +92,7 @@ export default function AdminParentsScreen({ onBack }) {
       return;
     }
 
+    setSaving(true);
     if (editingId) {
       // Modification
       try {
@@ -107,11 +110,14 @@ export default function AdminParentsScreen({ onBack }) {
       } catch (error) {
         console.error('Erreur:', error);
         Alert.alert('Erreur', 'Impossible de modifier le parent.');
+      } finally {
+        setSaving(false);
       }
     } else {
       // Création
       if (!password.trim()) {
         Alert.alert('Erreur', 'Le mot de passe est obligatoire.');
+        setSaving(false);
         return;
       }
       try {
@@ -131,6 +137,8 @@ export default function AdminParentsScreen({ onBack }) {
         console.error('Erreur:', error);
         const message = error?.response?.data?.detail || 'Impossible de créer le parent.';
         Alert.alert('Erreur', message);
+      } finally {
+        setSaving(false);
       }
     }
   };
@@ -145,6 +153,7 @@ export default function AdminParentsScreen({ onBack }) {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
+            setDeletingId(parent.id);
             try {
               await deleteParent(parent.id);
               Alert.alert('Succès', 'Parent et ses enfants supprimés avec succès.');
@@ -152,6 +161,8 @@ export default function AdminParentsScreen({ onBack }) {
             } catch (error) {
               console.error('Erreur:', error);
               Alert.alert('Erreur', 'Impossible de supprimer le parent.');
+            } finally {
+              setDeletingId(null);
             }
           },
         },
@@ -220,10 +231,19 @@ export default function AdminParentsScreen({ onBack }) {
                   <Text style={styles.editButtonText}>Modifier</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.statusButton, styles.deleteButton]}
+                  style={[
+                    styles.statusButton,
+                    styles.deleteButton,
+                    deletingId === parent.id && styles.buttonLoadingDisabled,
+                  ]}
                   onPress={() => handleDeleteParent(parent)}
+                  disabled={deletingId === parent.id}
                 >
-                  <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  {deletingId === parent.id ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text style={styles.deleteButtonText}>Supprimer</Text>
+                  )}
                 </Pressable>
               </View>
             </View>
@@ -305,10 +325,21 @@ export default function AdminParentsScreen({ onBack }) {
                 </>
               )}
 
-              <Pressable style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>
-                  {editingId ? 'Modifier' : 'Créer'}
-                </Text>
+              <Pressable
+                style={[
+                  styles.saveButton,
+                  saving && styles.buttonLoadingDisabled,
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>
+                    {editingId ? 'Modifier' : 'Créer'}
+                  </Text>
+                )}
               </Pressable>
             </View>
           </ScrollView>
@@ -491,6 +522,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  buttonLoadingDisabled: {
+    opacity: 0.6,
   },
   deleteButton: {
     backgroundColor: '#ef4444',

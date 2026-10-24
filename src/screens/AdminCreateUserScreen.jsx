@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { createUser } from '../services/api';
 
@@ -98,8 +98,16 @@ export default function AdminCreateUserScreen() {
           </Pressable>
         </View>
 
-        <Pressable style={styles.button} onPress={handleCreateUser} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'En cours...' : 'Créer utilisateur'}</Text>
+        <Pressable
+          style={[styles.button, loading && styles.buttonDisabled]}
+          onPress={handleCreateUser}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>Créer utilisateur</Text>
+          )}
         </Pressable>
 
         <Pressable style={styles.logout} onPress={logout}>
@@ -124,6 +132,7 @@ const styles = StyleSheet.create({
   roleText: { color: '#0f172a', fontWeight: '600' },
   roleTextActive: { color: '#fff', fontWeight: '700' },
   button: { marginTop: 14, backgroundColor: '#2563eb', padding: 12, borderRadius: 8, alignItems: 'center' },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontWeight: '700' },
   logout: { marginTop: 10, alignItems: 'center' },
   logoutText: { color: '#dc2626', fontWeight: '700' },

@@ -394,8 +394,9 @@ export default function ComptableDashboard() {
                     ) : isRejecting ? (
                       <View style={{ flexDirection: 'row', gap: 10 }}>
                         <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1 }]}
+                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
                           onPress={handleConfirmReject}
+                          disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Confirmer le Rejet</Text>
                         </Pressable>
@@ -409,14 +410,16 @@ export default function ComptableDashboard() {
                     ) : (
                       <View style={{ flexDirection: 'row', gap: 10 }}>
                         <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#16a34a', flex: 1 }]}
+                          style={[styles.actionBtn, { backgroundColor: '#16a34a', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
                           onPress={() => handleValidate(selectedPayment)}
+                          disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Valider</Text>
                         </Pressable>
                         <Pressable
-                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1 }]}
+                          style={[styles.actionBtn, { backgroundColor: '#dc2626', flex: 1, opacity: actionLoading ? 0.6 : 1 }]}
                           onPress={() => setIsRejecting(true)}
+                          disabled={actionLoading}
                         >
                           <Text style={styles.actionBtnText}>Rejeter</Text>
                         </Pressable>
